@@ -1,0 +1,3 @@
+import {createFileRoute} from '@tanstack/react-router';
+import {RatePage} from '@/components/validity/links';
+export const Route=createFileRoute('/rate/$id')({head:()=>({meta:[{title:'Rate your event team — Validity'},{name:'description',content:'Rate your event team for a Validity Event & Marketing project.'},{property:'og:title',content:'Rate your event team — Validity'},{property:'og:description',content:'Rate your event team for a Validity event.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),component:function P(){const {id}=Route.useParams();return <RatePage id={id}/>}});

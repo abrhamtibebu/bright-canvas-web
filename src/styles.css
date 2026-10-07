@@ -77,3 +77,17 @@ button, input, select { font:inherit; } button,a,input,select { -webkit-tap-high
 @media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
 
 progress {appearance:none; border:0; background:var(--muted); border-radius:4px; overflow:hidden;} progress::-webkit-progress-bar {background:var(--muted);border-radius:4px;} progress::-webkit-progress-value {background:var(--primary);border-radius:4px;} progress::-moz-progress-bar {background:var(--primary);border-radius:4px;}
+.share-url {display:flex;gap:8px;} .share-url input {flex:1;font-size:12px;}
+.share-grid {display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.public-shell {min-height:100vh;background:var(--background);display:flex;flex-direction:column;}
+.public-header {padding:18px 24px;border-bottom:1px solid var(--border);background:var(--card);} .public-header .logo {width:150px;}
+.public-main {flex:1;padding:32px 18px;} .public-footer {text-align:center;font-size:10px;color:var(--muted-foreground);padding:20px;}
+.public-card {max-width:760px;margin:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:32px;} .public-card.center {text-align:center;} .public-card textarea {width:100%;}
+.big-icon {width:48px;height:48px;color:var(--primary);margin:0 auto 14px;}
+.form-section {border:0;border-top:1px solid var(--border);padding:20px 0 24px;margin:0;} .form-section legend {font-weight:700;font-size:14px;padding-right:10px;color:var(--primary);}
+.form-section label input,.form-section label select {width:100%;}
+.check-label {font-size:12px;font-weight:600;margin-bottom:8px;} .check-grid {display:flex;flex-wrap:wrap;gap:8px;}
+.check-item {display:inline-flex!important;align-items:center;gap:7px;font-size:12px;font-weight:500!important;border:1px solid var(--border);border-radius:6px;padding:7px 10px;cursor:pointer;} .check-item input {accent-color:var(--primary);}
+.sub-entry {background:var(--muted);border-radius:8px;padding:14px;display:grid;gap:10px;font-size:12px;}
+.stars {display:flex;gap:2px;} .stars button {color:var(--muted-foreground);padding:2px;} .stars button.on {color:var(--primary);} .stars button.on svg {fill:var(--primary);} .stars svg {width:20px;height:20px;}
+@media(max-width:640px){.public-card{padding:20px}.share-url{flex-direction:column}}
