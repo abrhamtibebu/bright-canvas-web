@@ -19,14 +19,17 @@ export function apiUrl(path: string): string {
   return `${apiOrigin()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-function xsrfToken(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : undefined;
+const tokenKey = "validity-token";
+
+function authToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(tokenKey);
 }
 
-export async function ensureCsrf(): Promise<void> {
-  await fetch(apiUrl("/sanctum/csrf-cookie"), { credentials: "include" });
+function setAuthToken(token: string | null) {
+  if (typeof window === "undefined") return;
+  if (token) sessionStorage.setItem(tokenKey, token);
+  else sessionStorage.removeItem(tokenKey);
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -35,10 +38,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-  const token = xsrfToken();
-  if (token) headers.set("X-XSRF-TOKEN", token);
+  const token = authToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(apiUrl(path), { ...init, headers, credentials: "include" });
+  const response = await fetch(apiUrl(path), { ...init, headers });
   if (response.status === 204) return undefined as T;
 
   const data = (await response.json().catch(() => ({}))) as { message?: string };
@@ -49,14 +52,18 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export async function login(email: string, password: string) {
-  await ensureCsrf();
-  return api<{ name: string; email: string }>("/api/login", {
+  const user = await api<{ name: string; email: string; token: string }>("/api/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  setAuthToken(user.token);
+  return user;
 }
 
 export async function logout() {
-  await ensureCsrf();
-  await api("/api/logout", { method: "POST" });
+  try {
+    await api("/api/logout", { method: "POST" });
+  } finally {
+    setAuthToken(null);
+  }
 }

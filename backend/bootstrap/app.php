@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        // The site and API are on different hosts, so the browser will not
+        // send the session cookie. Admin routes authenticate with a bearer token.
+        $middleware->validateCsrfTokens(except: ['api/*']);
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
