@@ -82,7 +82,7 @@ progress {appearance:none; border:0; background:var(--muted); border-radius:4px;
 .public-shell {min-height:100vh;background:var(--background);display:flex;flex-direction:column;}
 .public-header {padding:18px 24px;border-bottom:1px solid var(--border);background:var(--card);} .public-header .logo {width:150px;}
 .public-main {flex:1;padding:32px 18px;} .public-footer {text-align:center;font-size:10px;color:var(--muted-foreground);padding:20px;}
-.public-card {max-width:760px;margin:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:32px;} .public-card.center {text-align:center;} .public-card textarea {width:100%;}
+.public-card {max-width:760px;margin:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:32px;} .public-card.center {text-align:center;} .public-card.narrow {max-width:420px;} .public-card textarea {width:100%;}
 .big-icon {width:48px;height:48px;color:var(--primary);margin:0 auto 14px;}
 .form-section {border:0;border-top:1px solid var(--border);padding:20px 0 24px;margin:0;} .form-section legend {font-weight:700;font-size:14px;padding-right:10px;color:var(--primary);}
 .form-section label input,.form-section label select {width:100%;}

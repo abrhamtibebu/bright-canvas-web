@@ -1,10 +1,14 @@
-import {useState,type ReactNode} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {Copy,Check,Send,MessageCircle,Mail,Link2,Star,CheckCircle2,CalendarDays,MapPin} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
-import {useDemo,Avatar} from './workspace';
+import {api,login} from '@/lib/api';
 import type {Usher} from '@/lib/demo-data';
+import {Avatar} from './workspace';
 import logo from '@/assets/validity-logo.png.asset.json';
+
+type PublicProject={name:string;date:string;location:string;callTime:string;endTime:string;compensation:string;transport:string;dressCode:string};
+type Named={id:number;name:string};
 
 export function ShareLinkButton({path,title,description,label,message,variant='default',disabled}:{path:string;title:string;description:string;label:string;message:string;variant?:'default'|'outline';disabled?:boolean}){
   const [open,setOpen]=useState(false);const [copied,setCopied]=useState(false);
@@ -21,7 +25,6 @@ export function ShareLinkButton({path,title,description,label,message,variant='d
       <Button variant="outline" asChild><a href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`}><Mail/>Email</a></Button>
       <Button variant="outline" onClick={nativeShare}><Link2/>More options</Button>
     </div>
-    <p className="subtext m-0">Demo preview: responses on this link reset when the page refreshes.</p>
   </DialogContent></Dialog></>;
 }
 
@@ -29,13 +32,14 @@ export function PublicShell({children}:{children:ReactNode}){return <div classNa
 
 function Section({title,children}:{title:string;children:ReactNode}){return <fieldset className="form-section"><legend>{title}</legend><div className="form-grid">{children}</div></fieldset>}
 function F({label,name,type='text',required,full,options,placeholder}:{label:string;name:string;type?:string;required?:boolean;full?:boolean;options?:string[];placeholder?:string}){return <label className={full?'full':''}>{label}{required&&<span className="text-primary"> *</span>}{options?<select name={name} required={required} defaultValue=""><option value="" disabled>Select…</option>{options.map(o=><option key={o}>{o}</option>)}</select>:type==='textarea'?<textarea name={name} rows={3} placeholder={placeholder}/>:<input name={name} type={type} required={required} placeholder={placeholder} accept={type==='file'?'image/*':undefined}/>}</label>}
-function Checks({label,name,items}:{label:string;name:string;items:string[]}){return <div className="full"><div className="check-label">{label}</div><div className="check-grid">{items.map(i=><label key={i} className="check-item"><input type="checkbox" name={name} value={i}/>{i}</label>)}</div></div>}
+function Checks({label,name,items}:{label:string;name:string;items:string[]}){return <div className="full"><div className="check-label">{label}</div><div className="check-grid">{items.map(i=><label key={i} className="check-item"><input type="checkbox" name={`${name}[]`} value={i}/>{i}</label>)}</div></div>}
 
-export function RegistrationPage(){
-  const {setUshers}=useDemo();const [done,setDone]=useState(false);const [exp,setExp]=useState(1);const [refs,setRefs]=useState(1);
+export function RegistrationPage({token}:{token:string}){
+  const [done,setDone]=useState(false);const [exp,setExp]=useState(1);const [refs,setRefs]=useState(1);const [error,setError]=useState('');
   if(done)return <PublicShell><div className="public-card center"><CheckCircle2 className="big-icon"/><h1>Registration received</h1><p className="subtext">Thank you! The Validity team will review your profile and contact you once it’s verified.</p></div></PublicShell>;
-  return <PublicShell><form className="public-card" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);setUshers(u=>[...u,{id:Date.now(),name:String(f.get('name')),city:String(f.get('city')),gender:String(f.get('gender')),experience:Number(f.get('years')||0),events:Number(f.get('events')||0),rating:0,skills:f.getAll('skills').map(String),languages:f.getAll('languages').map(String),status:'Pending',available:true}]);setDone(true);window.scrollTo(0,0);}}>
+  return <PublicShell><form className="public-card" onSubmit={e=>{e.preventDefault();setError('');void api(`/api/public/register/${token}`,{method:'POST',body:new FormData(e.currentTarget)}).then(()=>{setDone(true);window.scrollTo(0,0)}).catch(()=>setError('Check the required fields and profile photo, then try again.'))}}>
     <h1>Usher registration</h1><p className="subtext mb-6">Join the Validity usher community. Fields marked * are required. Financial and ID details are private and never shared with clients.</p>
+    {error&&<p role="alert" className="text-warning mb-4">{error}</p>}
     <Section title="Personal information"><F label="Full name" name="name" required/><F label="Phone number" name="phone" type="tel" required/><F label="Gender" name="gender" required options={['Female','Male']}/><F label="Date of birth" name="dob" type="date" required/><F label="City" name="city" required options={['Addis Ababa','Adama','Bahir Dar','Hawassa','Mekelle','Dire Dawa','Other']}/><F label="Address" name="address" required/><F label="Email" name="email" type="email"/><F label="Telegram username" name="telegram"/></Section>
     <Section title="Emergency contact"><F label="Contact name" name="ecName" required/><F label="Relationship" name="ecRel" required/><F label="Phone number" name="ecPhone" type="tel" required/></Section>
     <Section title="Education"><F label="Highest education level" name="edu" options={['High school','Diploma','Bachelor’s degree','Master’s degree','Other']}/><F label="Institution" name="inst"/><F label="Field of study" name="field"/></Section>
@@ -56,34 +60,52 @@ export function RegistrationPage(){
   </form></PublicShell>;
 }
 
-function ProjectHead({id}:{id:string}){const {projects}=useDemo();const p=projects.find(p=>String(p.id)===id);if(!p)return null;return <div className="mb-6"><h1>{p.name}</h1><div className="project-meta"><span><CalendarDays/>{p.date}</span><span><MapPin/>{p.location}</span></div></div>}
+function ProjectHead({project}:{project:PublicProject|undefined}){if(!project)return null;return <div className="mb-6"><h1>{project.name}</h1><div className="project-meta"><span><CalendarDays/>{project.date}</span><span><MapPin/>{project.location}</span></div></div>}
+function EventFacts({project}:{project:PublicProject}){return <div className="profile-detail"><div><small>Call time</small>{project.callTime}</div><div><small>End time</small>{project.endTime}</div><div><small>Compensation</small>{project.compensation}</div><div><small>Transport & lunch</small>{project.transport}</div><div className="col-span-2"><small>Dress code</small>{project.dressCode}</div></div>}
 
 export function RespondPage({id}:{id:string}){
-  const {ushers,assignments,setAssignments}=useDemo();const invited=ushers.filter(u=>assignments[u.id]);const [who,setWho]=useState('');const [answer,setAnswer]=useState('');
+  const [project,setProject]=useState<PublicProject|null>(null);const [invited,setInvited]=useState<Named[]>([]);const [who,setWho]=useState('');const [answer,setAnswer]=useState('');const [error,setError]=useState('');
+  useEffect(()=>{void api<{project:PublicProject;ushers:Named[]}>(`/api/public/availability/${id}`).then(data=>{setProject(data.project);setInvited(data.ushers)}).catch(()=>setError('This availability link is not valid.'))},[id]);
   if(answer)return <PublicShell><div className="public-card center"><CheckCircle2 className="big-icon"/><h1>{answer==='Confirmed'?'You’re confirmed!':'Thanks for letting us know'}</h1><p className="subtext">{answer==='Confirmed'?'We’ll share the call time and final details closer to the event.':'We hope to work with you on the next event.'}</p></div></PublicShell>;
-  return <PublicShell><div className="public-card"><ProjectHead id={id}/><h2 className="mb-3">Confirm your availability</h2><div className="profile-detail"><div><small>Call time</small>7:00 AM</div><div><small>End time</small>6:00 PM</div><div><small>Compensation</small>ETB 1,300 / day</div><div><small>Transport & lunch</small>Provided</div><div className="col-span-2"><small>Dress code</small>Black trousers and a white shirt</div></div>
+  if(error)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{error}</p></div></PublicShell>;
+  if(!project)return <PublicShell><div className="public-card center"><p className="subtext">Loading invitation…</p></div></PublicShell>;
+  return <PublicShell><div className="public-card"><ProjectHead project={project}/><h2 className="mb-3">Confirm your availability</h2><EventFacts project={project}/>
     <div className="form-grid mb-5"><label className="full">Your name<select aria-label="Your name" value={who} onChange={e=>setWho(e.target.value)}><option value="">Select your name…</option>{invited.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label></div>
-    <div className="toolbar"><Button disabled={!who} onClick={()=>{setAssignments(a=>({...a,[Number(who)]:'Confirmed'}));setAnswer('Confirmed')}}><Check/>I’m available</Button><Button variant="outline" disabled={!who} onClick={()=>{setAssignments(a=>({...a,[Number(who)]:'Declined'}));setAnswer('Declined')}}>Not available</Button></div></div></PublicShell>;
+    <div className="toolbar"><Button disabled={!who} onClick={()=>{void api(`/api/public/availability/${id}`,{method:'POST',body:JSON.stringify({usher_id:Number(who),response:'Confirmed'})}).then(()=>setAnswer('Confirmed'))}}><Check/>I’m available</Button><Button variant="outline" disabled={!who} onClick={()=>{void api(`/api/public/availability/${id}`,{method:'POST',body:JSON.stringify({usher_id:Number(who),response:'Declined'})}).then(()=>setAnswer('Declined'))}}>Not available</Button></div></div></PublicShell>;
 }
 
 export function ClientPage({id}:{id:string}){
-  const {ushers,assignments}=useDemo();const team=ushers.filter(u=>assignments[u.id]==='Confirmed');const [picked,setPicked]=useState<number[]>([]);const [done,setDone]=useState(false);const [view,setView]=useState<Usher|null>(null);
+  const [project,setProject]=useState<PublicProject|null>(null);const [team,setTeam]=useState<Usher[]>([]);const [picked,setPicked]=useState<number[]>([]);const [done,setDone]=useState(false);const [view,setView]=useState<Usher|null>(null);const [error,setError]=useState('');
+  useEffect(()=>{void api<{project:PublicProject;ushers:Usher[]}>(`/api/public/client/${id}`).then(data=>{setProject(data.project);setTeam(data.ushers)}).catch(()=>setError('This client link is not valid.'))},[id]);
   if(done)return <PublicShell><div className="public-card center"><CheckCircle2 className="big-icon"/><h1>Selection submitted</h1><p className="subtext">Thank you. Validity will finalise your team of {picked.length} ushers.</p></div></PublicShell>;
-  return <PublicShell><div className="public-card"><ProjectHead id={id}/><h2 className="mb-1">Select your team</h2><p className="subtext mb-4">These ushers have confirmed their availability. Tick the people you’d like on your team.</p>
+  if(error)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{error}</p></div></PublicShell>;
+  if(!project)return <PublicShell><div className="public-card center"><p className="subtext">Loading team…</p></div></PublicShell>;
+  return <PublicShell><div className="public-card"><ProjectHead project={project}/><h2 className="mb-1">Select your team</h2><p className="subtext mb-4">These ushers have confirmed their availability. Tick the people you’d like on your team.</p>
     {team.length?team.map(u=><label className="review-row cursor-pointer" key={u.id}><Avatar usher={u}/><div className="flex-1"><h3>{u.name}</h3><div className="subtext">{u.experience} years · {u.events} events · {u.languages.join(', ')}</div><div>{u.skills.map(s=><span key={s} className="skill">{s}</span>)}</div></div><span className="rating"><Star/>{u.rating}</span><Button type="button" variant="outline" size="sm" onClick={e=>{e.preventDefault();setView(u)}}>View profile</Button><input type="checkbox" aria-label={`Select ${u.name}`} checked={picked.includes(u.id)} onChange={()=>setPicked(p=>p.includes(u.id)?p.filter(x=>x!==u.id):[...p,u.id])}/></label>):<div className="empty">No confirmed ushers yet.</div>}
-    <Button className="w-full mt-5" disabled={!picked.length} onClick={()=>setDone(true)}><Check/>Submit selection ({picked.length})</Button></div>
+    <Button className="w-full mt-5" disabled={!picked.length} onClick={()=>{void api(`/api/public/client/${id}`,{method:'POST',body:JSON.stringify({usher_ids:picked})}).then(()=>setDone(true))}}><Check/>Submit selection ({picked.length})</Button></div>
     <Dialog open={!!view} onOpenChange={()=>setView(null)}><DialogContent className="max-h-[90vh] overflow-y-auto">{view&&<><DialogTitle>{view.name}</DialogTitle><DialogDescription>{view.city} · {view.gender}</DialogDescription>
-      <div className="photo-grid">{['Profile photo','Event photo','Event photo'].map((l,i)=><div key={i} className="photo-tile"><span>{view.name.split(' ').map(n=>n[0]).join('')}</span><small>{l}</small></div>)}</div>
-      <div className="profile-detail"><div><small>Experience</small><strong>{view.experience} years · {view.events} events</strong></div><div><small>Rating</small><span className="rating"><Star/>{view.rating} / 5</span></div><div><small>Languages</small>{view.languages.join(', ')}</div><div><small>Preferred events</small>Corporate, Conference, Exhibition</div></div>
+      <div className="profile-detail"><div><small>Experience</small><strong>{view.experience} years · {view.events} events</strong></div><div><small>Rating</small><span className="rating"><Star/>{view.rating} / 5</span></div><div><small>Languages</small>{view.languages.join(', ')}</div><div><small>Preferred events</small>{(view.preferredEvents??[]).join(', ')||'—'}</div></div>
       <h3 className="mb-2">Skills</h3><div className="mb-4">{view.skills.map(s=><span key={s} className="skill">{s}</span>)}</div>
-      <h3 className="mb-2">Event experience</h3>{[['Telebirr Anniversary','Ethio telecom',view.skills[0]],['Addis Expo 2026','Demo client',view.skills[1]||'Registration'],['Corporate Product Launch','Demo client','Guest Relations']].map(([e,c,r])=><div key={e} className="review-row"><div className="flex-1"><strong>{e}</strong><div className="subtext">{c} · {r}</div></div><span className="rating"><Star/>{view.rating}</span></div>)}
+      <h3 className="mb-2">Event experience</h3>{(view.experiences??[]).length?(view.experiences??[]).map(item=><div key={`${item.event}-${item.role}`} className="review-row"><div className="flex-1"><strong>{item.event}</strong><div className="subtext">{item.client} · {item.role}</div></div></div>):<p className="subtext">No previous events listed.</p>}
       <Button className="w-full mt-4" onClick={()=>{setPicked(p=>p.includes(view.id)?p:[...p,view.id]);setView(null)}}><Check/>{picked.includes(view.id)?'Selected':'Select for my team'}</Button></>}</DialogContent></Dialog></PublicShell>;
 }
 
 export function RatePage({id}:{id:string}){
-  const {ushers,assignments}=useDemo();const team=ushers.filter(u=>assignments[u.id]==='Confirmed');const [scores,setScores]=useState<Record<number,number>>({});const [done,setDone]=useState(false);
+  const [project,setProject]=useState<PublicProject|null>(null);const [team,setTeam]=useState<Usher[]>([]);const [scores,setScores]=useState<Record<number,number>>({});const [comments,setComments]=useState<Record<number,string>>({});const [done,setDone]=useState(false);const [error,setError]=useState('');
+  useEffect(()=>{void api<{project:PublicProject;ushers:Usher[]}>(`/api/public/ratings/${id}`).then(data=>{setProject(data.project);setTeam(data.ushers)}).catch(()=>setError('This rating link is not valid.'))},[id]);
   if(done)return <PublicShell><div className="public-card center"><CheckCircle2 className="big-icon"/><h1>Thank you for your feedback</h1><p className="subtext">Your ratings help us build even better teams.</p></div></PublicShell>;
-  return <PublicShell><div className="public-card"><ProjectHead id={id}/><h2 className="mb-1">Rate your event team</h2><p className="subtext mb-4">How did each usher perform?</p>
-    {team.map(u=><div className="review-row" key={u.id}><Avatar usher={u}/><div className="flex-1"><h3>{u.name}</h3><textarea className="w-full mt-2" rows={2} placeholder="Optional comment"/></div><div className="stars" role="radiogroup" aria-label={`Rate ${u.name}`}>{[1,2,3,4,5].map(n=><button type="button" key={n} aria-label={`${n} stars`} className={(scores[u.id]||0)>=n?'on':''} onClick={()=>setScores(s=>({...s,[u.id]:n}))}><Star/></button>)}</div></div>)}
-    <Button className="w-full mt-5" disabled={!team.length||Object.keys(scores).length<team.length} onClick={()=>setDone(true)}><Check/>Submit ratings</Button></div></PublicShell>;
+  if(error)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{error}</p></div></PublicShell>;
+  if(!project)return <PublicShell><div className="public-card center"><p className="subtext">Loading team…</p></div></PublicShell>;
+  return <PublicShell><div className="public-card"><ProjectHead project={project}/><h2 className="mb-1">Rate your event team</h2><p className="subtext mb-4">How did each usher perform?</p>
+    {team.map(u=><div className="review-row" key={u.id}><Avatar usher={u}/><div className="flex-1"><h3>{u.name}</h3><textarea className="w-full mt-2" rows={2} placeholder="Optional comment" value={comments[u.id]??''} onChange={e=>setComments(c=>({...c,[u.id]:e.target.value}))}/></div><div className="stars" role="radiogroup" aria-label={`Rate ${u.name}`}>{[1,2,3,4,5].map(n=><button type="button" key={n} aria-label={`${n} stars`} className={(scores[u.id]||0)>=n?'on':''} onClick={()=>setScores(s=>({...s,[u.id]:n}))}><Star/></button>)}</div></div>)}
+    <Button className="w-full mt-5" disabled={!team.length||Object.keys(scores).length<team.length} onClick={()=>{void api(`/api/public/ratings/${id}`,{method:'POST',body:JSON.stringify({ratings:team.map(u=>({usher_id:u.id,score:scores[u.id],comment:comments[u.id]??''}))})}).then(()=>setDone(true))}}><Check/>Submit ratings</Button></div></PublicShell>;
+}
+
+export function LoginPage(){
+  const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [error,setError]=useState('');const [pending,setPending]=useState(false);
+  return <PublicShell><form className="public-card narrow" onSubmit={e=>{e.preventDefault();setError('');setPending(true);void login(email,password).then(()=>{window.location.assign('/')}).catch(()=>{setError('Those credentials were not recognized.');setPending(false)})}}>
+    <h1>Sign in</h1><p className="subtext mb-6">Validity administrators</p>
+    {error&&<p role="alert" className="text-warning mb-4">{error}</p>}
+    <div className="form-grid"><label className="full">Email<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@validity.test"/></label><label className="full">Password<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><Button type="submit" className="full" disabled={pending}>{pending?'Signing in…':'Sign in'}</Button></div>
+  </form></PublicShell>;
 }

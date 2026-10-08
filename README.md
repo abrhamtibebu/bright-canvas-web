@@ -1,24 +1,41 @@
-# Bright Canvas Web
+# Validity
 
-prepare this webapp and use the attached logo and it's colors for branding and theme
+Usher management platform for Validity Event & Marketing.
 
-This project was built with [Lovable](https://lovable.dev).
+- `frontend/` — React app
+- `backend/` — Laravel API
 
-## Build with Lovable
+## Local development
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/6d6992a4-77f9-47ce-8e78-96654acca1d0).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Use two terminals.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+cd backend
+php artisan migrate --seed
+php artisan serve
 ```
+
+```sh
+cd frontend
+bun install
+bun run dev
+```
+
+The app runs at [http://localhost:3000](http://localhost:3000). The Vite dev server proxies `/api` and `/sanctum` to Laravel on port 8000.
+
+Local admin: `admin@validity.test` / `password`
+
+`php artisan migrate --seed` loads the sample ushers and events. Seeding is for local development only.
+
+## Render
+
+The API is set up to deploy as a Docker web service with Render Postgres. [`render.yaml`](render.yaml) defines the service, database, and a persistent disk for registration photos.
+
+After connecting the repository in Render, set:
+
+- `APP_KEY` — output of `php artisan key:generate --show`
+- `APP_URL` — the service URL, including `https://`
+- `FRONTEND_URL` — the web app origin
+- `SANCTUM_STATEFUL_DOMAINS` — that same frontend host, without the scheme
+
+Deploys run `php artisan migrate --force`. They do not reseed sample data.

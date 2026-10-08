@@ -13,8 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as InvitationsRouteImport } from './routes/invitations'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProjectsRouteImport } from './routes/projects'
-import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VerificationRouteImport } from './routes/verification'
@@ -22,6 +22,7 @@ import { Route as ClientIdRouteImport } from './routes/client.$id'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as RateIdRouteImport } from './routes/rate.$id'
+import { Route as RegisterTokenRouteImport } from './routes/register.$token'
 import { Route as RespondIdRouteImport } from './routes/respond.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -44,14 +45,14 @@ const InvitationsRoute = InvitationsRouteImport.update({
   path: '/invitations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -89,6 +90,11 @@ const RateIdRoute = RateIdRouteImport.update({
   path: '/rate/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RegisterTokenRoute = RegisterTokenRouteImport.update({
+  id: '/register/$token',
+  path: '/register/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RespondIdRoute = RespondIdRouteImport.update({
   id: '/respond/$id',
   path: '/respond/$id',
@@ -100,14 +106,15 @@ export interface FileRoutesByFullPath {
   '/attendance': typeof AttendanceRoute
   '/directory': typeof DirectoryRoute
   '/invitations': typeof InvitationsRoute
+  '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
+  '/register/$token': typeof RegisterTokenRoute
   '/respond/$id': typeof RespondIdRoute
   '/projects/': typeof ProjectsIndexRoute
 }
@@ -116,13 +123,14 @@ export interface FileRoutesByTo {
   '/attendance': typeof AttendanceRoute
   '/directory': typeof DirectoryRoute
   '/invitations': typeof InvitationsRoute
-  '/register': typeof RegisterRoute
+  '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
+  '/register/$token': typeof RegisterTokenRoute
   '/respond/$id': typeof RespondIdRoute
   '/projects': typeof ProjectsIndexRoute
 }
@@ -132,14 +140,15 @@ export interface FileRoutesById {
   '/attendance': typeof AttendanceRoute
   '/directory': typeof DirectoryRoute
   '/invitations': typeof InvitationsRoute
+  '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
+  '/register/$token': typeof RegisterTokenRoute
   '/respond/$id': typeof RespondIdRoute
   '/projects/': typeof ProjectsIndexRoute
 }
@@ -150,14 +159,15 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/directory'
     | '/invitations'
+    | '/login'
     | '/projects'
-    | '/register'
     | '/reports'
     | '/settings'
     | '/verification'
     | '/client/$id'
     | '/projects/$id'
     | '/rate/$id'
+    | '/register/$token'
     | '/respond/$id'
     | '/projects/'
   fileRoutesByTo: FileRoutesByTo
@@ -166,13 +176,14 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/directory'
     | '/invitations'
-    | '/register'
+    | '/login'
     | '/reports'
     | '/settings'
     | '/verification'
     | '/client/$id'
     | '/projects/$id'
     | '/rate/$id'
+    | '/register/$token'
     | '/respond/$id'
     | '/projects'
   id:
@@ -181,14 +192,15 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/directory'
     | '/invitations'
+    | '/login'
     | '/projects'
-    | '/register'
     | '/reports'
     | '/settings'
     | '/verification'
     | '/client/$id'
     | '/projects/$id'
     | '/rate/$id'
+    | '/register/$token'
     | '/respond/$id'
     | '/projects/'
   fileRoutesById: FileRoutesById
@@ -198,13 +210,14 @@ export interface RootRouteChildren {
   AttendanceRoute: typeof AttendanceRoute
   DirectoryRoute: typeof DirectoryRoute
   InvitationsRoute: typeof InvitationsRoute
+  LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
-  RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   VerificationRoute: typeof VerificationRoute
   ClientIdRoute: typeof ClientIdRoute
   RateIdRoute: typeof RateIdRoute
+  RegisterTokenRoute: typeof RegisterTokenRoute
   RespondIdRoute: typeof RespondIdRoute
 }
 
@@ -238,18 +251,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvitationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects': {
       id: '/projects'
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -301,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RateIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/register/$token': {
+      id: '/register/$token'
+      path: '/register/$token'
+      fullPath: '/register/$token'
+      preLoaderRoute: typeof RegisterTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/respond/$id': {
       id: '/respond/$id'
       path: '/respond/$id'
@@ -330,13 +350,14 @@ const rootRouteChildren: RootRouteChildren = {
   AttendanceRoute: AttendanceRoute,
   DirectoryRoute: DirectoryRoute,
   InvitationsRoute: InvitationsRoute,
+  LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
-  RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   VerificationRoute: VerificationRoute,
   ClientIdRoute: ClientIdRoute,
   RateIdRoute: RateIdRoute,
+  RegisterTokenRoute: RegisterTokenRoute,
   RespondIdRoute: RespondIdRoute,
 }
 export const routeTree = rootRouteImport
