@@ -43,7 +43,9 @@ function laravelProxy(): Plugin {
   };
 }
 
-export default defineConfig({
+const frontendRoot = path.dirname(fileURLToPath(import.meta.url));
+
+export default defineConfig(({ command }) => ({
   server: {
     port: 3000,
   },
@@ -66,10 +68,10 @@ export default defineConfig({
       },
     }),
     viteReact(),
-    nitro({
-      output: {
-        publicDir: path.join(path.dirname(fileURLToPath(import.meta.url)), "dist"),
-      },
-    }),
+    nitro(
+      command === "build"
+        ? { output: { publicDir: path.join(frontendRoot, "dist") } }
+        : {},
+    ),
   ],
-});
+}));

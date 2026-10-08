@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
         $admin->save();
 
         WorkspaceSetting::query()->firstOrCreate([], [
-            'company' => 'Validity Event & Marketing',
+            'company' => 'Validity Events',
             'workspace' => 'Usher Directory',
             'timezone' => 'Addis Ababa (UTC+3)',
             'currency' => 'Ethiopian birr (ETB)',

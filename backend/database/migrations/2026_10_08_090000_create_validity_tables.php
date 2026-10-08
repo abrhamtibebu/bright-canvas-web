@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('workspace_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('company')->default('Validity Event & Marketing');
+            $table->string('company')->default('Validity Events');
             $table->string('workspace')->default('Usher Directory');
             $table->string('timezone')->default('Addis Ababa (UTC+3)');
             $table->string('currency')->default('Ethiopian birr (ETB)');

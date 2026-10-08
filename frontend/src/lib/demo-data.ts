@@ -11,6 +11,7 @@ export type Usher = {
   languages: string[];
   status: string;
   available: boolean;
+  photos?: string[];
   preferredEvents?: string[];
   experiences?: { event: string | null; client: string | null; role: string | null }[];
 };

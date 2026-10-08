@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Rating;
 use App\Models\Usher;
+use App\Models\UsherPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PublicProjectController extends Controller
 {
@@ -45,7 +48,7 @@ class PublicProjectController extends Controller
 
         return response()->json([
             'project' => $project->presentPublic(),
-            'ushers' => $this->confirmedUshers($project),
+            'ushers' => $this->confirmedUshers($project, $token),
         ]);
     }
 
@@ -68,7 +71,7 @@ class PublicProjectController extends Controller
 
         return response()->json([
             'project' => $project->presentPublic(),
-            'ushers' => $this->confirmedUshers($project),
+            'ushers' => $this->confirmedUshers($project, $token),
         ]);
     }
 
@@ -102,18 +105,40 @@ class PublicProjectController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function photo(string $token, UsherPhoto $photo): StreamedResponse
+    {
+        $project = Project::query()
+            ->where(fn ($query) => $query->where('client_token', $token)->orWhere('rating_token', $token))
+            ->firstOrFail();
+
+        $confirmed = $project->assignments()
+            ->where('usher_id', $photo->usher_id)
+            ->where('response', 'Confirmed')
+            ->exists();
+
+        abort_unless($confirmed, 404);
+        abort_unless(Storage::disk('local')->exists($photo->path), 404);
+
+        return Storage::disk('local')->response($photo->path);
+    }
+
     private function project(string $column, string $token): Project
     {
         return Project::query()->where($column, $token)->firstOrFail();
     }
 
-    private function confirmedUshers(Project $project)
+    private function confirmedUshers(Project $project, string $token)
     {
         return $project->assignments()
             ->where('response', 'Confirmed')
-            ->with('usher.experiences')
+            ->with(['usher.experiences', 'usher.photos'])
             ->get()
-            ->map(fn ($assignment) => $assignment->usher->presentPublic())
+            ->map(function ($assignment) use ($token) {
+                $usher = $assignment->usher->presentPublic();
+                $usher['photos'] = $assignment->usher->publicPhotoPaths($token);
+
+                return $usher;
+            })
             ->values();
     }
 }

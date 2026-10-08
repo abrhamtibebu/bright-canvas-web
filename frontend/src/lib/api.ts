@@ -21,7 +21,7 @@ export function apiUrl(path: string): string {
 
 const tokenKey = "validity-token";
 
-function authToken(): string | null {
+export function authToken(): string | null {
   if (typeof window === "undefined") return null;
   return sessionStorage.getItem(tokenKey);
 }
@@ -49,6 +49,15 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(response.status, data.message ?? "Request failed");
   }
   return data as T;
+}
+
+export async function authorizedBlob(path: string): Promise<string | null> {
+  const token = authToken();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(apiUrl(path), { headers });
+  if (!response.ok) return null;
+  return URL.createObjectURL(await response.blob());
 }
 
 export async function login(email: string, password: string) {

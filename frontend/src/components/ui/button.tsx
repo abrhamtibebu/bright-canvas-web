@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -34,13 +35,45 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  pending?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+  ({ className, variant, size, asChild = false, pending = false, children, disabled, onClick, ...props }, ref) => {
+    const [busy, setBusy] = React.useState(false);
+    const isPending = pending || busy;
+    const classes = cn(buttonVariants({ variant, size, className }));
+
+    if (asChild) {
+      return (
+        <Slot className={classes} ref={ref} {...props}>
+          {children}
+        </Slot>
+      );
+    }
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <button
+        className={classes}
+        ref={ref}
+        disabled={disabled || isPending}
+        aria-busy={isPending || undefined}
+        onClick={(event) => {
+          if (isPending) {
+            event.preventDefault();
+            return;
+          }
+          const result = onClick?.(event) as unknown;
+          if (result && typeof (result as Promise<unknown>).then === "function") {
+            setBusy(true);
+            void Promise.resolve(result).finally(() => setBusy(false));
+          }
+        }}
+        {...props}
+      >
+        {isPending ? <Loader2 className="btn-spin" aria-hidden="true" /> : null}
+        {children}
+      </button>
     );
   },
 );

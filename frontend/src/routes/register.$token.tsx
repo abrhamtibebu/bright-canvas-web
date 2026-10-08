@@ -5,7 +5,7 @@ export const Route = createFileRoute('/register/$token')({
   head: () => ({
     meta: [
       { title: 'Usher registration — Validity' },
-      { name: 'description', content: 'Register to join the Validity Event & Marketing usher community.' },
+      { name: 'description', content: 'Register to join the Validity Events usher community.' },
       { property: 'og:title', content: 'Usher registration — Validity' },
       { property: 'og:description', content: 'Register to join the Validity usher community.' },
       { property: 'og:type', content: 'website' },

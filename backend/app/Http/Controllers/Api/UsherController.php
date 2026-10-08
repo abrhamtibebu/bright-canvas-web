@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usher;
+use App\Models\UsherPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UsherController extends Controller
 {
@@ -24,6 +27,7 @@ class UsherController extends Controller
             ->when($request->boolean('available'), function ($query) {
                 $query->where('available', true);
             })
+            ->with('photos')
             ->orderBy('id')
             ->get()
             ->filter(function (Usher $usher) use ($request) {
@@ -64,7 +68,17 @@ class UsherController extends Controller
 
     public function show(Usher $usher): JsonResponse
     {
+        $usher->load('photos');
+
         return response()->json($usher->present());
+    }
+
+    public function photo(Usher $usher, UsherPhoto $photo): StreamedResponse
+    {
+        abort_unless($photo->usher_id === $usher->id, 404);
+        abort_unless(Storage::disk('local')->exists($photo->path), 404);
+
+        return Storage::disk('local')->response($photo->path);
     }
 
     public function update(Request $request, Usher $usher): JsonResponse

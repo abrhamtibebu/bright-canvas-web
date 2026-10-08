@@ -1,6 +1,6 @@
 # Validity
 
-Usher management platform for Validity Event & Marketing.
+Usher management platform for Validity Events.
 
 - `frontend/` — React app
 - `backend/` — Laravel API

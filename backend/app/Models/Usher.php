@@ -50,6 +50,28 @@ class Usher extends Model
         return $this->hasMany(Rating::class);
     }
 
+    public function photoPaths(): array
+    {
+        $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
+
+        return $photos
+            ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
+            ->values()
+            ->map(fn (UsherPhoto $photo) => "/api/ushers/{$this->id}/photos/{$photo->id}")
+            ->all();
+    }
+
+    public function publicPhotoPaths(string $token): array
+    {
+        $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
+
+        return $photos
+            ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
+            ->values()
+            ->map(fn (UsherPhoto $photo) => "/api/public/photos/{$token}/{$photo->id}")
+            ->all();
+    }
+
     public function refreshRating(): void
     {
         $average = $this->ratings()->avg('score');
@@ -76,6 +98,7 @@ class Usher extends Model
             'languages' => $this->languages ?? [],
             'status' => $this->status,
             'available' => $this->available,
+            'photos' => $this->photoPaths(),
         ];
     }
 

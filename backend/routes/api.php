@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/workspace', [WorkspaceController::class, 'show']);
     Route::get('/ushers', [UsherController::class, 'index']);
     Route::post('/ushers', [UsherController::class, 'store']);
+    Route::get('/ushers/{usher}/photos/{photo}', [UsherController::class, 'photo']);
     Route::get('/ushers/{usher}', [UsherController::class, 'show']);
     Route::patch('/ushers/{usher}', [UsherController::class, 'update']);
     Route::get('/projects', [ProjectController::class, 'index']);
@@ -32,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports', [ReportController::class, 'show']);
 });
 
+Route::get('/public/photos/{token}/{photo}', [PublicProjectController::class, 'photo']);
 Route::post('/public/register/{token}', [PublicRegistrationController::class, 'store']);
 Route::get('/public/availability/{token}', [PublicProjectController::class, 'availability']);
 Route::post('/public/availability/{token}', [PublicProjectController::class, 'respond']);
