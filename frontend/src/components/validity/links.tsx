@@ -5,8 +5,6 @@ import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/u
 import {api,login} from '@/lib/api';
 import type {Usher} from '@/lib/demo-data';
 import {Avatar} from './workspace';
-import logo from '@/assets/validity-logo.png.asset.json';
-
 type PublicProject={name:string;date:string;location:string;callTime:string;endTime:string;compensation:string;transport:string;dressCode:string};
 type Named={id:number;name:string};
 
@@ -28,7 +26,7 @@ export function ShareLinkButton({path,title,description,label,message,variant='d
   </DialogContent></Dialog></>;
 }
 
-export function PublicShell({children}:{children:ReactNode}){return <div className="public-shell"><header className="public-header"><img src={logo.url} alt="Validity Event & Marketing" className="logo"/></header><main className="public-main">{children}</main><footer className="public-footer">© 2026 Validity Event & Marketing</footer></div>}
+export function PublicShell({children}:{children:ReactNode}){return <div className="public-shell"><header className="public-header"><img src="/validity-events-logo.svg" alt="Validity Events" className="logo"/></header><main className="public-main">{children}</main><footer className="public-footer">© 2026 Validity Event & Marketing</footer></div>}
 
 function Section({title,children}:{title:string;children:ReactNode}){return <fieldset className="form-section"><legend>{title}</legend><div className="form-grid">{children}</div></fieldset>}
 function F({label,name,type='text',required,full,options,placeholder}:{label:string;name:string;type?:string;required?:boolean;full?:boolean;options?:string[];placeholder?:string}){return <label className={full?'full':''}>{label}{required&&<span className="text-primary"> *</span>}{options?<select name={name} required={required} defaultValue=""><option value="" disabled>Select…</option>{options.map(o=><option key={o}>{o}</option>)}</select>:type==='textarea'?<textarea name={name} rows={3} placeholder={placeholder}/>:<input name={name} type={type} required={required} placeholder={placeholder} accept={type==='file'?'image/*':undefined}/>}</label>}
@@ -106,6 +104,6 @@ export function LoginPage(){
   return <PublicShell><form className="public-card narrow" onSubmit={e=>{e.preventDefault();setError('');setPending(true);void login(email,password).then(()=>{window.location.assign('/')}).catch(()=>{setError('Those credentials were not recognized.');setPending(false)})}}>
     <h1>Sign in</h1><p className="subtext mb-6">Validity administrators</p>
     {error&&<p role="alert" className="text-warning mb-4">{error}</p>}
-    <div className="form-grid"><label className="full">Email<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@validity.test"/></label><label className="full">Password<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><Button type="submit" className="full" disabled={pending}>{pending?'Signing in…':'Sign in'}</Button></div>
+    <div className="form-grid"><label className="full">Email<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@validity.et"/></label><label className="full">Password<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><Button type="submit" className="full" disabled={pending}>{pending?'Signing in…':'Sign in'}</Button></div>
   </form></PublicShell>;
 }

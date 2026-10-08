@@ -7,6 +7,18 @@ export class ApiError extends Error {
   }
 }
 
+function apiOrigin(): string {
+  const configured = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "");
+  if (!configured) {
+    throw new Error("Set VITE_API_URL in frontend/.env to the Laravel API address.");
+  }
+  return configured;
+}
+
+export function apiUrl(path: string): string {
+  return `${apiOrigin()}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 function xsrfToken(): string | undefined {
   if (typeof document === "undefined") return undefined;
   const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
@@ -14,7 +26,7 @@ function xsrfToken(): string | undefined {
 }
 
 export async function ensureCsrf(): Promise<void> {
-  await fetch("/sanctum/csrf-cookie", { credentials: "include" });
+  await fetch(apiUrl("/sanctum/csrf-cookie"), { credentials: "include" });
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -26,7 +38,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = xsrfToken();
   if (token) headers.set("X-XSRF-TOKEN", token);
 
-  const response = await fetch(path, { ...init, headers, credentials: "include" });
+  const response = await fetch(apiUrl(path), { ...init, headers, credentials: "include" });
   if (response.status === 204) return undefined as T;
 
   const data = (await response.json().catch(() => ({}))) as { message?: string };

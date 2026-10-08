@@ -13,13 +13,14 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::query()->updateOrCreate(
-            ['email' => 'admin@validity.test'],
-            [
-                'name' => 'Validity Admin',
-                'password' => 'password',
-            ],
-        );
+        $admin = User::query()->whereIn('email', ['admin@validity.et', 'admin@test.com'])->first()
+            ?? new User();
+        $admin->fill([
+            'name' => 'Validity Admin',
+            'email' => 'admin@validity.et',
+            'password' => 'ValidityAdmin@2026',
+        ]);
+        $admin->save();
 
         WorkspaceSetting::query()->firstOrCreate([], [
             'company' => 'Validity Event & Marketing',
