@@ -54,6 +54,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 export async function authorizedBlob(path: string): Promise<string | null> {
   const token = authToken();
   const headers = new Headers();
+  headers.set("Accept", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
   const response = await fetch(apiUrl(path), { headers });
   if (!response.ok) return null;

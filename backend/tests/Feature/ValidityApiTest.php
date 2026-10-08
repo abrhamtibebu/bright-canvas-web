@@ -20,6 +20,7 @@ class ValidityApiTest extends TestCase
     public function test_guests_cannot_list_ushers(): void
     {
         $this->getJson('/api/ushers')->assertUnauthorized();
+        $this->get('/api/ushers/1/photos/1')->assertUnauthorized();
     }
 
     public function test_admin_can_log_in_and_list_ushers(): void
@@ -128,9 +129,19 @@ class ValidityApiTest extends TestCase
         rename($from, $to);
         $this->get('/api/ushers/'.$usher['id'].'/photos/'.$photo->id)->assertOk();
 
+        $nested = storage_path('app/extra/ushers/'.$usher['id']);
+        if (! is_dir($nested)) {
+            mkdir($nested, 0777, true);
+        }
+        $nestedFile = $nested.'/'.basename($photo->path);
+        copy($to, $nestedFile);
         unlink($to);
+        $this->get('/api/ushers/'.$usher['id'].'/photos/'.$photo->id)->assertOk();
+
+        unlink($nestedFile);
         $hidden = collect($this->getJson('/api/ushers')->assertOk()->json())->firstWhere('name', 'Liya Bekele');
         $this->assertSame([], $hidden['photos']);
+        $this->assertGreaterThan(0, $hidden['missingPhotos']);
 
         $replaced = $this->post('/api/ushers/'.$usher['id'].'/photos', [
             'photo' => UploadedFile::fake()->create('again.jpg', 80, 'image/jpeg'),

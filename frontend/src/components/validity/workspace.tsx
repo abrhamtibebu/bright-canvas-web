@@ -37,7 +37,7 @@ function Profile({usher,open,onClose}:{usher:Usher;open:boolean;onClose:()=>void
   const languages=joined([...(person.languages??[]), person.otherLanguages]);
   return <Dialog open={open} onOpenChange={onClose}><DialogContent className="max-w-2xl"><DialogTitle>Usher profile</DialogTitle><DialogDescription>Profile · U-{String(person.id).padStart(3,'0')}</DialogDescription>
     <div className="profile-head"><Avatar usher={person}/><div><h2>{person.name}</h2><div className="subtext">{person.city} · {person.gender}</div><Status value={person.status}/></div></div>
-    <UsherPhotos usher={person} onRemove={setPhotoPath}/><AddUsherPhoto usherId={person.id}/>
+    <UsherPhotos usher={person} onRemove={setPhotoPath}/>{(person.missingPhotos??0)>0&&<div className="attention mb-3">This profile still lists {person.missingPhotos} photo{person.missingPhotos===1?'':'s'}, but the image {person.missingPhotos===1?'file is':'files are'} no longer on the server. Add {person.missingPhotos===1?'it':'them'} again below.</div>}<AddUsherPhoto usherId={person.id}/>
     {photoPath&&<div className="photo-confirm"><span>Remove this photo?</span><Button variant="outline" size="sm" onClick={()=>setPhotoPath(null)}>Keep</Button><Button variant="destructive" size="sm" pending={removingPhoto} onClick={()=>{setRemovingPhoto(true);void deleteUsherPhoto(photoPath).then(()=>setPhotoPath(null)).finally(()=>setRemovingPhoto(false))}}>Remove photo</Button></div>}
     <div className="profile-detail">
       <div><small>Phone</small>{blank(person.phone)}</div>

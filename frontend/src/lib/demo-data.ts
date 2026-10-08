@@ -43,6 +43,7 @@ export type Usher = {
   status: string;
   available: boolean;
   photos?: string[];
+  missingPhotos?: number;
   preferredEvents?: string[];
   tshirtSize?: string | null;
   shirtSize?: string | null;

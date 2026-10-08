@@ -63,6 +63,13 @@ class Usher extends Model
             ->all();
     }
 
+    public function missingPhotoCount(): int
+    {
+        $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
+
+        return $photos->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) === null)->count();
+    }
+
     public function publicPhotoPaths(string $token): array
     {
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
@@ -133,6 +140,7 @@ class Usher extends Model
             'status' => $this->status,
             'available' => $this->available,
             'photos' => $this->photoPaths(),
+            'missingPhotos' => $this->missingPhotoCount(),
             'experiences' => $this->experienceRows(),
             'references' => $this->referenceRows(),
         ];
