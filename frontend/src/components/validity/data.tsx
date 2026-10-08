@@ -19,13 +19,23 @@ type WorkspaceData = {
   requestCorrection: (id: number) => Promise<void>;
   addUsher: (input: { name: string; phone: string; city: string }) => Promise<void>;
   addUsherPhoto: (id: number, file: File) => Promise<void>;
+  deleteUsherPhoto: (path: string) => Promise<void>;
+  deleteUsher: (id: number) => Promise<void>;
+  deleteProject: (id: number) => Promise<void>;
+  deleteAssignment: (id: number) => Promise<void>;
   createProject: (input: {
     name: string;
     client: string;
-    date: string;
+    starts_on: string;
+    ends_on: string;
     location: string;
     required: number;
     call_time: string;
+    end_time: string;
+    transport_provided: boolean;
+    food_provided: boolean;
+    compensation: string;
+    dress_code: string;
   }) => Promise<void>;
   invite: (projectId: number, usherIds: number[]) => Promise<void>;
   setResponse: (assignmentId: number, response: string) => Promise<void>;
@@ -120,6 +130,22 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       const body = new FormData();
       body.append("photo", file);
       await api(`/api/ushers/${id}/photos`, { method: "POST", body });
+      await refresh();
+    },
+    deleteUsherPhoto: async (path) => {
+      await api(path, { method: "DELETE" });
+      await refresh();
+    },
+    deleteUsher: async (id) => {
+      await api(`/api/ushers/${id}`, { method: "DELETE" });
+      await refresh();
+    },
+    deleteProject: async (id) => {
+      await api(`/api/projects/${id}`, { method: "DELETE" });
+      await refresh();
+    },
+    deleteAssignment: async (id) => {
+      await api(`/api/assignments/${id}`, { method: "DELETE" });
       await refresh();
     },
     createProject: async (input) => {

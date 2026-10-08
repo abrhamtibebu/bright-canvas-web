@@ -25,4 +25,12 @@ class StoredPhoto
 
         return response()->file($full);
     }
+
+    public static function delete(string $path): void
+    {
+        $full = self::locate($path);
+        if ($full !== null) {
+            unlink($full);
+        }
+    }
 }

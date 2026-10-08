@@ -6,7 +6,7 @@ import {api,login} from '@/lib/api';
 import type {Usher} from '@/lib/demo-data';
 import {Avatar} from './workspace';
 import {LoadingMark,UsherPhotos} from './brand';
-type PublicProject={name:string;date:string;location:string;callTime:string;endTime:string;compensation:string;transport:string;dressCode:string};
+type PublicProject={name:string;date:string;location:string;callTime:string;endTime:string;compensation:string;transport:string;dressCode:string;transportProvided?:boolean;foodProvided?:boolean};
 type Named={id:number;name:string};
 
 export function ShareLinkButton({path,title,description,label,message,variant='default',disabled}:{path:string;title:string;description:string;label:string;message:string;variant?:'default'|'outline';disabled?:boolean}){
@@ -76,7 +76,8 @@ export function RegistrationPage({token}:{token:string}){
 }
 
 function ProjectHead({project}:{project:PublicProject|undefined}){if(!project)return null;return <div className="mb-6"><h1>{project.name}</h1><div className="project-meta"><span><CalendarDays/>{project.date}</span><span><MapPin/>{project.location}</span></div></div>}
-function EventFacts({project}:{project:PublicProject}){return <div className="profile-detail"><div><small>Call time</small>{project.callTime}</div><div><small>End time</small>{project.endTime}</div><div><small>Compensation</small>{project.compensation}</div><div><small>Transport & lunch</small>{project.transport}</div><div className="col-span-2"><small>Dress code</small>{project.dressCode}</div></div>}
+function provided(value:boolean|undefined){return value===false?'Not provided':'Provided'}
+function EventFacts({project}:{project:PublicProject}){return <div className="profile-detail"><div><small>Dates</small>{project.date}</div><div><small>Work hours</small>{project.callTime} – {project.endTime}</div><div><small>Transport</small>{provided(project.transportProvided)}</div><div><small>Food</small>{provided(project.foodProvided)}</div><div><small>Compensation</small>{project.compensation}</div><div><small>Dress code</small>{project.dressCode}</div></div>}
 
 export function RespondPage({id}:{id:string}){
   const [project,setProject]=useState<PublicProject|null>(null);const [invited,setInvited]=useState<Named[]>([]);const [who,setWho]=useState('');const [answer,setAnswer]=useState('');const [error,setError]=useState('');const [note,setNote]=useState('');

@@ -122,7 +122,9 @@ class ValidityApiTest extends TestCase
         $photo = UsherPhoto::query()->where('usher_id', $usher['id'])->firstOrFail();
         $from = storage_path('app/private/'.$photo->path);
         $to = storage_path('app/'.$photo->path);
-        mkdir(dirname($to), 0777, true);
+        if (! is_dir(dirname($to))) {
+            mkdir(dirname($to), 0777, true);
+        }
         rename($from, $to);
         $this->get('/api/ushers/'.$usher['id'].'/photos/'.$photo->id)->assertOk();
 
@@ -196,6 +198,110 @@ class ValidityApiTest extends TestCase
             'usher_id' => $meron->id,
             'response' => 'Confirmed',
         ]);
+    }
+
+    public function test_admin_creates_a_multi_day_project_and_can_delete_records(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $this->postJson('/api/projects', [
+            'name' => 'Summit',
+            'client' => 'Acme',
+            'starts_on' => '2026-11-03',
+            'ends_on' => '2026-11-01',
+            'location' => 'Millennium Hall',
+            'required' => 12,
+            'call_time' => '08:00',
+            'end_time' => '17:30',
+            'transport_provided' => false,
+            'food_provided' => true,
+            'compensation' => 'ETB 2,000 / day',
+            'dress_code' => 'Navy suit',
+        ])->assertStatus(422);
+
+        $this->postJson('/api/projects', [
+            'name' => 'Summit',
+            'client' => 'Acme',
+            'starts_on' => '2026-11-01',
+            'ends_on' => '2026-11-03',
+            'location' => 'Millennium Hall',
+            'required' => 12,
+            'call_time' => '08:00',
+            'end_time' => '07:00',
+            'transport_provided' => true,
+            'food_provided' => true,
+            'compensation' => 'ETB 2,000 / day',
+            'dress_code' => 'Navy suit',
+        ])->assertStatus(422)->assertJsonValidationErrors('end_time');
+
+        $created = $this->postJson('/api/projects', [
+            'name' => 'Summit',
+            'client' => 'Acme',
+            'starts_on' => '2026-11-01',
+            'ends_on' => '2026-11-03',
+            'location' => 'Millennium Hall',
+            'required' => 12,
+            'call_time' => '08:00',
+            'end_time' => '17:30',
+            'transport_provided' => false,
+            'food_provided' => true,
+            'compensation' => 'ETB 2,000 / day',
+            'dress_code' => 'Navy suit',
+        ])->assertCreated()
+            ->assertJsonPath('date', 'Nov 1–3, 2026')
+            ->assertJsonPath('callTime', '8:00 AM')
+            ->assertJsonPath('endTime', '5:30 PM')
+            ->assertJsonPath('transport', 'Food provided, transport not included')
+            ->assertJsonPath('transportProvided', false)
+            ->assertJsonPath('foodProvided', true)
+            ->json();
+
+        $usher = Usher::query()->where('status', 'Active')->firstOrFail();
+        $this->postJson('/api/projects/'.$created['id'].'/invitations', [
+            'usher_ids' => [$usher->id],
+        ])->assertOk();
+
+        $assignment = Assignment::query()->where('project_id', $created['id'])->firstOrFail();
+        $this->deleteJson('/api/assignments/'.$assignment->id)->assertNoContent();
+        $this->assertDatabaseMissing('assignments', ['id' => $assignment->id]);
+
+        $this->deleteJson('/api/projects/'.$created['id'])->assertNoContent();
+        $this->assertDatabaseMissing('projects', ['id' => $created['id']]);
+
+        $token = WorkspaceSetting::query()->firstOrFail()->registration_token;
+        $this->post('/api/public/register/'.$token, [
+            'name' => 'Delete Me',
+            'phone' => '+251911000099',
+            'gender' => 'Female',
+            'dob' => '2000-01-01',
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+            'ecName' => 'Sara Bekele',
+            'ecRel' => 'Sister',
+            'ecPhone' => '+251911000098',
+            'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+        ])->assertCreated();
+
+        $registered = Usher::query()->where('name', 'Delete Me')->firstOrFail();
+        $photo = UsherPhoto::query()->where('usher_id', $registered->id)->firstOrFail();
+        $this->assertNotNull(\App\Support\StoredPhoto::locate($photo->path));
+
+        $this->deleteJson('/api/ushers/'.$registered->id.'/photos/'.$photo->id)->assertNoContent();
+        $this->assertDatabaseMissing('usher_photos', ['id' => $photo->id]);
+
+        $this->deleteJson('/api/ushers/'.$registered->id)->assertNoContent();
+        $this->assertDatabaseMissing('ushers', ['id' => $registered->id]);
+    }
+
+    public function test_guests_cannot_delete_records(): void
+    {
+        $this->seed();
+        $usher = Usher::query()->firstOrFail();
+        $project = Project::query()->firstOrFail();
+
+        $this->deleteJson('/api/ushers/'.$usher->id)->assertUnauthorized();
+        $this->deleteJson('/api/projects/'.$project->id)->assertUnauthorized();
     }
 
     public function test_authenticated_admin_can_read_reports(): void

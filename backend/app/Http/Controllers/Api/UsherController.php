@@ -8,6 +8,7 @@ use App\Models\UsherPhoto;
 use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class UsherController extends Controller
@@ -94,6 +95,26 @@ class UsherController extends Controller
         $usher->load('photos');
 
         return response()->json($usher->present());
+    }
+
+    public function destroyPhoto(Usher $usher, UsherPhoto $photo): Response
+    {
+        abort_unless($photo->usher_id === $usher->id, 404);
+        StoredPhoto::delete($photo->path);
+        $photo->delete();
+
+        return response()->noContent();
+    }
+
+    public function destroy(Usher $usher): Response
+    {
+        $usher->load('photos');
+        foreach ($usher->photos as $photo) {
+            StoredPhoto::delete($photo->path);
+        }
+        $usher->delete();
+
+        return response()->noContent();
     }
 
     public function update(Request $request, Usher $usher): JsonResponse

@@ -21,16 +21,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ushers', [UsherController::class, 'store']);
     Route::get('/ushers/{usher}/photos/{photo}', [UsherController::class, 'photo']);
     Route::post('/ushers/{usher}/photos', [UsherController::class, 'storePhoto']);
+    Route::delete('/ushers/{usher}/photos/{photo}', [UsherController::class, 'destroyPhoto']);
     Route::get('/ushers/{usher}', [UsherController::class, 'show']);
     Route::patch('/ushers/{usher}', [UsherController::class, 'update']);
+    Route::delete('/ushers/{usher}', [UsherController::class, 'destroy']);
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::post('/projects', [ProjectController::class, 'store']);
     Route::get('/projects/{project}', [ProjectController::class, 'show']);
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
     Route::post('/projects/{project}/invitations', [ProjectController::class, 'invite']);
     Route::post('/projects/{project}/selection', [ProjectController::class, 'select']);
     Route::post('/projects/{project}/ratings', [RatingController::class, 'store']);
     Route::get('/assignments', [AssignmentController::class, 'index']);
     Route::patch('/assignments/{assignment}', [AssignmentController::class, 'update']);
+    Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy']);
     Route::get('/reports', [ReportController::class, 'show']);
 });
 

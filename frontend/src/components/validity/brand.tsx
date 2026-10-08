@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { authorizedBlob } from "@/lib/api";
 import { initials, type Usher } from "@/lib/demo-data";
+import { Button } from "@/components/ui/button";
 import { useDemo } from "./data";
 
 export function LoadingMark({ label = "Loading…" }: { label?: string }) {
@@ -49,23 +50,32 @@ export function AddUsherPhoto({ usherId }: { usherId: number }) {
   );
 }
 
-export function UsherPhotos({ usher }: { usher: Usher }) {
+export function UsherPhotos({ usher, onRemove }: { usher: Usher; onRemove?: (path: string) => void }) {
   const photos = usher.photos ?? [];
   if (!photos.length) return null;
   return (
     <div className="photo-grid">
       {photos.map((path) => (
-        <PhotoTile key={path} path={path} alt={`${usher.name} photo`} />
+        <PhotoTile key={path} path={path} alt={`${usher.name} photo`} onRemove={onRemove} />
       ))}
     </div>
   );
 }
 
-function PhotoTile({ path, alt }: { path: string; alt: string }) {
+function PhotoTile({ path, alt, onRemove }: { path: string; alt: string; onRemove?: (path: string) => void }) {
   const photo = usePhoto(path);
   if (photo.state === "missing") return null;
   if (!photo.src) return <div className="photo-tile" aria-hidden="true" />;
-  return <img className="photo-tile" src={photo.src} alt={alt} />;
+  return (
+    <div className="photo-frame">
+      <img className="photo-tile" src={photo.src} alt={alt} />
+      {onRemove && (
+        <Button type="button" variant="destructive" size="sm" className="photo-remove" onClick={() => onRemove(path)}>
+          Remove
+        </Button>
+      )}
+    </div>
+  );
 }
 
 function usePhoto(path: string | undefined) {

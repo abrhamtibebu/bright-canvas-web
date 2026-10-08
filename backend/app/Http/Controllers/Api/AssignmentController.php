@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class AssignmentController extends Controller
 {
@@ -31,5 +32,12 @@ class AssignmentController extends Controller
         $assignment->load('project');
 
         return response()->json($assignment->present());
+    }
+
+    public function destroy(Assignment $assignment): Response
+    {
+        $assignment->delete();
+
+        return response()->noContent();
     }
 }

@@ -30,6 +30,10 @@ export type Project = {
   compensation: string;
   transport: string;
   dressCode: string;
+  startsOn?: string | null;
+  endsOn?: string | null;
+  transportProvided?: boolean;
+  foodProvided?: boolean;
   availabilityToken: string;
   clientToken: string;
   ratingToken: string;
@@ -46,6 +50,8 @@ export type Assignment = {
   endTime: string;
   compensation: string;
   transport: string;
+  transportProvided?: boolean;
+  foodProvided?: boolean;
   dressCode: string;
   role: string;
   response: string;

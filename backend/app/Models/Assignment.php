@@ -43,6 +43,8 @@ class Assignment extends Model
             'endTime' => $project?->end_time,
             'compensation' => $project?->compensation_label,
             'transport' => $project?->transport_and_lunch,
+            'transportProvided' => (bool) ($project?->transport_provided ?? true),
+            'foodProvided' => (bool) ($project?->food_provided ?? true),
             'dressCode' => $project?->dress_code,
             'role' => $this->role,
             'response' => $this->response,

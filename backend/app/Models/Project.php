@@ -11,8 +11,19 @@ class Project extends Model
     protected $fillable = [
         'name', 'client', 'date_label', 'location', 'required_ushers', 'status',
         'call_time', 'end_time', 'compensation_label', 'transport_and_lunch', 'dress_code',
+        'starts_on', 'ends_on', 'transport_provided', 'food_provided',
         'availability_token', 'client_token', 'rating_token',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'starts_on' => 'date',
+            'ends_on' => 'date',
+            'transport_provided' => 'boolean',
+            'food_provided' => 'boolean',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -48,6 +59,7 @@ class Project extends Model
             'compensation' => $this->compensation_label,
             'transport' => $this->transport_and_lunch,
             'dressCode' => $this->dress_code,
+            ...$this->schedule(),
             'availabilityToken' => $this->availability_token,
             'clientToken' => $this->client_token,
             'ratingToken' => $this->rating_token,
@@ -66,6 +78,17 @@ class Project extends Model
             'compensation' => $this->compensation_label,
             'transport' => $this->transport_and_lunch,
             'dressCode' => $this->dress_code,
+            ...$this->schedule(),
+        ];
+    }
+
+    private function schedule(): array
+    {
+        return [
+            'startsOn' => $this->starts_on?->toDateString(),
+            'endsOn' => $this->ends_on?->toDateString(),
+            'transportProvided' => (bool) $this->transport_provided,
+            'foodProvided' => (bool) $this->food_provided,
         ];
     }
 
