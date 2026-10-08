@@ -3,6 +3,7 @@ import {Copy,Check,Send,MessageCircle,Mail,Link2,Star,CheckCircle2,CalendarDays,
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 import {useDemo,Avatar} from './workspace';
+import type {Usher} from '@/lib/demo-data';
 import logo from '@/assets/validity-logo.png.asset.json';
 
 export function ShareLinkButton({path,title,description,label,message,variant='default',disabled}:{path:string;title:string;description:string;label:string;message:string;variant?:'default'|'outline';disabled?:boolean}){
@@ -66,11 +67,17 @@ export function RespondPage({id}:{id:string}){
 }
 
 export function ClientPage({id}:{id:string}){
-  const {ushers,assignments}=useDemo();const team=ushers.filter(u=>assignments[u.id]==='Confirmed');const [picked,setPicked]=useState<number[]>([]);const [done,setDone]=useState(false);
+  const {ushers,assignments}=useDemo();const team=ushers.filter(u=>assignments[u.id]==='Confirmed');const [picked,setPicked]=useState<number[]>([]);const [done,setDone]=useState(false);const [view,setView]=useState<Usher|null>(null);
   if(done)return <PublicShell><div className="public-card center"><CheckCircle2 className="big-icon"/><h1>Selection submitted</h1><p className="subtext">Thank you. Validity will finalise your team of {picked.length} ushers.</p></div></PublicShell>;
   return <PublicShell><div className="public-card"><ProjectHead id={id}/><h2 className="mb-1">Select your team</h2><p className="subtext mb-4">These ushers have confirmed their availability. Tick the people you’d like on your team.</p>
-    {team.length?team.map(u=><label className="review-row cursor-pointer" key={u.id}><Avatar usher={u}/><div className="flex-1"><h3>{u.name}</h3><div className="subtext">{u.experience} years · {u.events} events · {u.languages.join(', ')}</div><div>{u.skills.map(s=><span key={s} className="skill">{s}</span>)}</div></div><span className="rating"><Star/>{u.rating}</span><input type="checkbox" aria-label={`Select ${u.name}`} checked={picked.includes(u.id)} onChange={()=>setPicked(p=>p.includes(u.id)?p.filter(x=>x!==u.id):[...p,u.id])}/></label>):<div className="empty">No confirmed ushers yet.</div>}
-    <Button className="w-full mt-5" disabled={!picked.length} onClick={()=>setDone(true)}><Check/>Submit selection ({picked.length})</Button></div></PublicShell>;
+    {team.length?team.map(u=><label className="review-row cursor-pointer" key={u.id}><Avatar usher={u}/><div className="flex-1"><h3>{u.name}</h3><div className="subtext">{u.experience} years · {u.events} events · {u.languages.join(', ')}</div><div>{u.skills.map(s=><span key={s} className="skill">{s}</span>)}</div></div><span className="rating"><Star/>{u.rating}</span><Button type="button" variant="outline" size="sm" onClick={e=>{e.preventDefault();setView(u)}}>View profile</Button><input type="checkbox" aria-label={`Select ${u.name}`} checked={picked.includes(u.id)} onChange={()=>setPicked(p=>p.includes(u.id)?p.filter(x=>x!==u.id):[...p,u.id])}/></label>):<div className="empty">No confirmed ushers yet.</div>}
+    <Button className="w-full mt-5" disabled={!picked.length} onClick={()=>setDone(true)}><Check/>Submit selection ({picked.length})</Button></div>
+    <Dialog open={!!view} onOpenChange={()=>setView(null)}><DialogContent className="max-h-[90vh] overflow-y-auto">{view&&<><DialogTitle>{view.name}</DialogTitle><DialogDescription>{view.city} · {view.gender}</DialogDescription>
+      <div className="photo-grid">{['Profile photo','Event photo','Event photo'].map((l,i)=><div key={i} className="photo-tile"><span>{view.name.split(' ').map(n=>n[0]).join('')}</span><small>{l}</small></div>)}</div>
+      <div className="profile-detail"><div><small>Experience</small><strong>{view.experience} years · {view.events} events</strong></div><div><small>Rating</small><span className="rating"><Star/>{view.rating} / 5</span></div><div><small>Languages</small>{view.languages.join(', ')}</div><div><small>Preferred events</small>Corporate, Conference, Exhibition</div></div>
+      <h3 className="mb-2">Skills</h3><div className="mb-4">{view.skills.map(s=><span key={s} className="skill">{s}</span>)}</div>
+      <h3 className="mb-2">Event experience</h3>{[['Telebirr Anniversary','Ethio telecom',view.skills[0]],['Addis Expo 2026','Demo client',view.skills[1]||'Registration'],['Corporate Product Launch','Demo client','Guest Relations']].map(([e,c,r])=><div key={e} className="review-row"><div className="flex-1"><strong>{e}</strong><div className="subtext">{c} · {r}</div></div><span className="rating"><Star/>{view.rating}</span></div>)}
+      <Button className="w-full mt-4" onClick={()=>{setPicked(p=>p.includes(view.id)?p:[...p,view.id]);setView(null)}}><Check/>{picked.includes(view.id)?'Selected':'Select for my team'}</Button></>}</DialogContent></Dialog></PublicShell>;
 }
 
 export function RatePage({id}:{id:string}){
