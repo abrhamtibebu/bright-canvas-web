@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Usher;
 use App\Models\UsherPhoto;
+use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class UsherController extends Controller
 {
@@ -73,12 +73,27 @@ class UsherController extends Controller
         return response()->json($usher->present());
     }
 
-    public function photo(Usher $usher, UsherPhoto $photo): StreamedResponse
+    public function photo(Usher $usher, UsherPhoto $photo): BinaryFileResponse
     {
         abort_unless($photo->usher_id === $usher->id, 404);
-        abort_unless(Storage::disk('local')->exists($photo->path), 404);
 
-        return Storage::disk('local')->response($photo->path);
+        return StoredPhoto::response($photo->path);
+    }
+
+    public function storePhoto(Request $request, Usher $usher): JsonResponse
+    {
+        $data = $request->validate([
+            'photo' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
+        ]);
+
+        $path = $data['photo']->store('ushers/'.$usher->id, 'local');
+        $usher->photos()->create([
+            'path' => $path,
+            'kind' => $usher->photos()->where('kind', 'profile')->exists() ? 'additional' : 'profile',
+        ]);
+        $usher->load('photos');
+
+        return response()->json($usher->present());
     }
 
     public function update(Request $request, Usher $usher): JsonResponse

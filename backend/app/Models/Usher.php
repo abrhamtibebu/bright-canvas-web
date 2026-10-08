@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Support\StoredPhoto;
 
 class Usher extends Model
 {
@@ -56,6 +57,7 @@ class Usher extends Model
 
         return $photos
             ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
+            ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
             ->values()
             ->map(fn (UsherPhoto $photo) => "/api/ushers/{$this->id}/photos/{$photo->id}")
             ->all();
@@ -67,6 +69,7 @@ class Usher extends Model
 
         return $photos
             ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
+            ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
             ->values()
             ->map(fn (UsherPhoto $photo) => "/api/public/photos/{$token}/{$photo->id}")
             ->all();

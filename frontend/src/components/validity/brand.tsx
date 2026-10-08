@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { authorizedBlob } from "@/lib/api";
 import { initials, type Usher } from "@/lib/demo-data";
+import { useDemo } from "./data";
 
 export function LoadingMark({ label = "Loading…" }: { label?: string }) {
   return (
@@ -17,6 +18,35 @@ export function UsherAvatar({ usher }: { usher: Usher }) {
   const photo = usePhoto(usher.photos?.[0]);
   if (photo.src) return <img className="person-avatar photo" src={photo.src} alt="" />;
   return <div className="person-avatar">{initials(usher.name)}</div>;
+}
+
+export function AddUsherPhoto({ usherId }: { usherId: number }) {
+  const { addUsherPhoto } = useDemo();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  return (
+    <div className="photo-upload">
+      <label>
+        {pending ? "Uploading photo…" : "Add photo"}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          disabled={pending}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.currentTarget.value = "";
+            if (!file) return;
+            setPending(true);
+            setError("");
+            void addUsherPhoto(usherId, file)
+              .catch(() => setError("That photo could not be saved."))
+              .finally(() => setPending(false));
+          }}
+        />
+      </label>
+      {error ? <p role="alert">{error}</p> : null}
+    </div>
+  );
 }
 
 export function UsherPhotos({ usher }: { usher: Usher }) {

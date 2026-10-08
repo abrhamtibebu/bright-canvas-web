@@ -102,6 +102,10 @@ progress {appearance:none; border:0; background:var(--muted); border-radius:4px;
 @keyframes btn-spin {to {transform:rotate(360deg);}}
 .btn-spin {animation:btn-spin .7s linear infinite;}
 .photo-tile {aspect-ratio:3/4;width:100%;border-radius:12px;object-fit:cover;background:var(--muted);}
+.photo-upload {margin:4px 0 12px;font-size:12px;font-weight:600;}
+.photo-upload label {display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
+.photo-upload input {font-size:12px;max-width:100%;}
+.photo-upload p {color:var(--warning);font-weight:500;margin:6px 0 0;}
 .loading-mark {min-height:40vh;display:grid;place-items:center;align-content:center;gap:14px;text-align:center;color:var(--muted-foreground);}
 .logo-mark {width:64px;height:64px;overflow:hidden;display:block;animation:mark-pulse 1.6s ease-in-out infinite;}
 .logo-mark img {height:64px;width:auto;max-width:none;}

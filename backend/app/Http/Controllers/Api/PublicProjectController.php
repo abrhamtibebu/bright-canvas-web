@@ -7,10 +7,10 @@ use App\Models\Project;
 use App\Models\Rating;
 use App\Models\Usher;
 use App\Models\UsherPhoto;
+use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PublicProjectController extends Controller
 {
@@ -105,7 +105,7 @@ class PublicProjectController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function photo(string $token, UsherPhoto $photo): StreamedResponse
+    public function photo(string $token, UsherPhoto $photo): BinaryFileResponse
     {
         $project = Project::query()
             ->where(fn ($query) => $query->where('client_token', $token)->orWhere('rating_token', $token))
@@ -117,9 +117,8 @@ class PublicProjectController extends Controller
             ->exists();
 
         abort_unless($confirmed, 404);
-        abort_unless(Storage::disk('local')->exists($photo->path), 404);
 
-        return Storage::disk('local')->response($photo->path);
+        return StoredPhoto::response($photo->path);
     }
 
     private function project(string $column, string $token): Project

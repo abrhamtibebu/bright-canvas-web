@@ -118,6 +118,23 @@ class ValidityApiTest extends TestCase
 
         $this->assertNotEmpty($usher['photos']);
         $this->get($usher['photos'][0])->assertOk();
+
+        $photo = UsherPhoto::query()->where('usher_id', $usher['id'])->firstOrFail();
+        $from = storage_path('app/private/'.$photo->path);
+        $to = storage_path('app/'.$photo->path);
+        mkdir(dirname($to), 0777, true);
+        rename($from, $to);
+        $this->get('/api/ushers/'.$usher['id'].'/photos/'.$photo->id)->assertOk();
+
+        unlink($to);
+        $hidden = collect($this->getJson('/api/ushers')->assertOk()->json())->firstWhere('name', 'Liya Bekele');
+        $this->assertSame([], $hidden['photos']);
+
+        $replaced = $this->post('/api/ushers/'.$usher['id'].'/photos', [
+            'photo' => UploadedFile::fake()->create('again.jpg', 80, 'image/jpeg'),
+        ])->assertOk()->json();
+        $this->assertNotEmpty($replaced['photos']);
+        $this->get($replaced['photos'][0])->assertOk();
     }
 
     public function test_client_can_view_confirmed_usher_photos(): void

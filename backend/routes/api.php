@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/ushers', [UsherController::class, 'index']);
     Route::post('/ushers', [UsherController::class, 'store']);
     Route::get('/ushers/{usher}/photos/{photo}', [UsherController::class, 'photo']);
+    Route::post('/ushers/{usher}/photos', [UsherController::class, 'storePhoto']);
     Route::get('/ushers/{usher}', [UsherController::class, 'show']);
     Route::patch('/ushers/{usher}', [UsherController::class, 'update']);
     Route::get('/projects', [ProjectController::class, 'index']);

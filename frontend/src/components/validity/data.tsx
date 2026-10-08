@@ -18,6 +18,7 @@ type WorkspaceData = {
   approveUsher: (id: number) => Promise<void>;
   requestCorrection: (id: number) => Promise<void>;
   addUsher: (input: { name: string; phone: string; city: string }) => Promise<void>;
+  addUsherPhoto: (id: number, file: File) => Promise<void>;
   createProject: (input: {
     name: string;
     client: string;
@@ -113,6 +114,12 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     },
     addUsher: async (input) => {
       await api("/api/ushers", { method: "POST", body: JSON.stringify(input) });
+      await refresh();
+    },
+    addUsherPhoto: async (id, file) => {
+      const body = new FormData();
+      body.append("photo", file);
+      await api(`/api/ushers/${id}/photos`, { method: "POST", body });
       await refresh();
     },
     createProject: async (input) => {
