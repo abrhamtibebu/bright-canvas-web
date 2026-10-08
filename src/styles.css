@@ -91,3 +91,6 @@ progress {appearance:none; border:0; background:var(--muted); border-radius:4px;
 .sub-entry {background:var(--muted);border-radius:8px;padding:14px;display:grid;gap:10px;font-size:12px;}
 .stars {display:flex;gap:2px;} .stars button {color:var(--muted-foreground);padding:2px;} .stars button.on {color:var(--primary);} .stars button.on svg {fill:var(--primary);} .stars svg {width:20px;height:20px;}
 @media(max-width:640px){.public-card{padding:20px}.share-url{flex-direction:column}}
+.photo-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0;}
+.photo-tile {aspect-ratio:3/4;border-radius:12px;background:linear-gradient(160deg,var(--primary),var(--foreground));color:var(--primary-foreground);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:22px;}
+.photo-tile small {font-size:11px;font-weight:500;opacity:.8;}
