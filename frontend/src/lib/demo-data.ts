@@ -1,19 +1,66 @@
+export type UsherExperience = {
+  event: string | null;
+  client: string | null;
+  role: string | null;
+  eventType?: string | null;
+};
+
+export type UsherReference = {
+  name: string | null;
+  organization: string | null;
+  relationship: string | null;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+};
+
 export type Usher = {
   id: number;
   name: string;
   phone?: string | null;
+  email?: string | null;
   city: string;
+  address?: string | null;
   gender: string;
+  dateOfBirth?: string | null;
+  telegram?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactRelationship?: string | null;
+  emergencyContactPhone?: string | null;
+  educationLevel?: string | null;
+  institution?: string | null;
+  fieldOfStudy?: string | null;
+  occupation?: string | null;
+  employer?: string | null;
+  employmentStatus?: string | null;
   experience: number;
   events: number;
   rating: number;
+  availability?: string | null;
   skills: string[];
   languages: string[];
+  otherLanguages?: string | null;
   status: string;
   available: boolean;
   photos?: string[];
   preferredEvents?: string[];
-  experiences?: { event: string | null; client: string | null; role: string | null }[];
+  tshirtSize?: string | null;
+  shirtSize?: string | null;
+  trouserSize?: string | null;
+  shoeSize?: string | null;
+  paymentMethod?: string | null;
+  bankName?: string | null;
+  accountHolder?: string | null;
+  accountNumber?: string | null;
+  telebirrNumber?: string | null;
+  idType?: string | null;
+  idNumber?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  linkedin?: string | null;
+  tiktok?: string | null;
+  experiences?: UsherExperience[];
+  references?: UsherReference[];
 };
 
 export type Project = {

@@ -28,7 +28,7 @@ class UsherController extends Controller
             ->when($request->boolean('available'), function ($query) {
                 $query->where('available', true);
             })
-            ->with('photos')
+            ->with(['photos', 'experiences', 'references'])
             ->orderBy('id')
             ->get()
             ->filter(function (Usher $usher) use ($request) {
@@ -69,7 +69,7 @@ class UsherController extends Controller
 
     public function show(Usher $usher): JsonResponse
     {
-        $usher->load('photos');
+        $usher->load(['photos', 'experiences', 'references']);
 
         return response()->json($usher->present());
     }

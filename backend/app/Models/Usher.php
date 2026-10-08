@@ -92,16 +92,49 @@ class Usher extends Model
             'id' => $this->id,
             'name' => $this->name,
             'phone' => $this->phone,
+            'email' => $this->email,
             'city' => $this->city,
+            'address' => $this->address,
             'gender' => $this->gender ?? '',
+            'dateOfBirth' => $this->date_of_birth?->format('M j, Y'),
+            'telegram' => $this->telegram,
+            'emergencyContactName' => $this->emergency_contact_name,
+            'emergencyContactRelationship' => $this->emergency_contact_relationship,
+            'emergencyContactPhone' => $this->emergency_contact_phone,
+            'educationLevel' => $this->education_level,
+            'institution' => $this->institution,
+            'fieldOfStudy' => $this->field_of_study,
+            'occupation' => $this->occupation,
+            'employer' => $this->employer,
+            'employmentStatus' => $this->employment_status,
             'experience' => $this->years_experience,
             'events' => $this->events_count,
             'rating' => (float) $this->rating,
+            'availability' => $this->availability_preference,
             'skills' => $this->skills ?? [],
             'languages' => $this->languages ?? [],
+            'otherLanguages' => $this->other_languages,
+            'preferredEvents' => $this->preferred_event_types ?? [],
+            'tshirtSize' => $this->tshirt_size,
+            'shirtSize' => $this->shirt_size,
+            'trouserSize' => $this->trouser_size,
+            'shoeSize' => $this->shoe_size,
+            'paymentMethod' => $this->payment_method,
+            'bankName' => $this->bank_name,
+            'accountHolder' => $this->account_holder,
+            'accountNumber' => $this->account_number,
+            'telebirrNumber' => $this->telebirr_number,
+            'idType' => $this->id_type,
+            'idNumber' => $this->id_number,
+            'instagram' => $this->instagram,
+            'facebook' => $this->facebook,
+            'linkedin' => $this->linkedin,
+            'tiktok' => $this->tiktok,
             'status' => $this->status,
             'available' => $this->available,
             'photos' => $this->photoPaths(),
+            'experiences' => $this->experienceRows(),
+            'references' => $this->referenceRows(),
         ];
     }
 
@@ -112,17 +145,51 @@ class Usher extends Model
             'name' => $this->name,
             'city' => $this->city,
             'gender' => $this->gender ?? '',
+            'educationLevel' => $this->education_level,
+            'institution' => $this->institution,
+            'fieldOfStudy' => $this->field_of_study,
+            'occupation' => $this->occupation,
+            'employer' => $this->employer,
+            'employmentStatus' => $this->employment_status,
             'experience' => $this->years_experience,
             'events' => $this->events_count,
             'rating' => (float) $this->rating,
+            'availability' => $this->availability_preference,
             'skills' => $this->skills ?? [],
             'languages' => $this->languages ?? [],
+            'otherLanguages' => $this->other_languages,
             'preferredEvents' => $this->preferred_event_types ?? [],
-            'experiences' => $this->experiences->map(fn (UsherExperience $experience) => [
-                'event' => $experience->event_name,
-                'client' => $experience->client,
-                'role' => $experience->role,
-            ])->all(),
+            'tshirtSize' => $this->tshirt_size,
+            'shirtSize' => $this->shirt_size,
+            'trouserSize' => $this->trouser_size,
+            'shoeSize' => $this->shoe_size,
+            'experiences' => $this->experienceRows(),
         ];
+    }
+
+    private function experienceRows(): array
+    {
+        $experiences = $this->relationLoaded('experiences') ? $this->experiences : $this->experiences()->get();
+
+        return $experiences->map(fn (UsherExperience $experience) => [
+            'event' => $experience->event_name,
+            'client' => $experience->client,
+            'role' => $experience->role,
+            'eventType' => $experience->event_type,
+        ])->values()->all();
+    }
+
+    private function referenceRows(): array
+    {
+        $references = $this->relationLoaded('references') ? $this->references : $this->references()->get();
+
+        return $references->map(fn (UsherReference $reference) => [
+            'name' => $reference->name,
+            'organization' => $reference->organization,
+            'relationship' => $reference->relationship,
+            'phone' => $reference->phone,
+            'email' => $reference->email,
+            'notes' => $reference->notes,
+        ])->values()->all();
     }
 }

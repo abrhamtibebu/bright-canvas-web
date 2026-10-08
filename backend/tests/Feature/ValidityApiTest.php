@@ -294,6 +294,78 @@ class ValidityApiTest extends TestCase
         $this->assertDatabaseMissing('ushers', ['id' => $registered->id]);
     }
 
+    public function test_admin_sees_full_usher_records_and_clients_see_recruiting_details_only(): void
+    {
+        $this->seed();
+        $token = WorkspaceSetting::query()->firstOrFail()->registration_token;
+
+        $this->post('/api/public/register/'.$token, [
+            'name' => 'Hana Bekele',
+            'phone' => '+251911222333',
+            'email' => 'hana@example.com',
+            'gender' => 'Female',
+            'dob' => '2000-01-01',
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+            'telegram' => '@hana',
+            'ecName' => 'Sara Bekele',
+            'ecRel' => 'Sister',
+            'ecPhone' => '+251911000001',
+            'edu' => 'Bachelor’s degree',
+            'inst' => 'AAU',
+            'field' => 'Marketing',
+            'occ' => 'Host',
+            'employer' => 'Validity',
+            'empStatus' => 'Freelancer',
+            'languages' => ['Amharic', 'English'],
+            'skills' => ['Registration'],
+            'prefs' => ['Conference'],
+            'availability' => 'Weekends',
+            'tshirt' => 'M',
+            'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'pay' => 'Bank transfer',
+            'bank' => 'CBE',
+            'holder' => 'Hana Bekele',
+            'acct' => '1000123456789',
+            'telebirr' => '+251911222333',
+            'idType' => 'National ID (Fayda)',
+            'idNo' => 'ID-9988',
+            'exEvent0' => 'Addis Expo',
+            'exClient0' => 'Demo client',
+            'exRole0' => 'Registration',
+            'rName0' => 'Dawit Alemu',
+            'rPhone0' => '+251911000777',
+            'rEmail0' => 'dawit@example.com',
+        ])->assertCreated();
+
+        $usher = Usher::query()->where('name', 'Hana Bekele')->firstOrFail();
+        $project = Project::query()->where('name', 'Big 5 Construct Ethiopia')->firstOrFail();
+        Assignment::query()->updateOrCreate(
+            ['project_id' => $project->id, 'usher_id' => $usher->id],
+            ['role' => 'Registration', 'response' => 'Confirmed', 'attendance' => 'Expected'],
+        );
+
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+        $admin = collect($this->getJson('/api/ushers')->assertOk()->json())->firstWhere('name', 'Hana Bekele');
+        $this->assertSame('+251911222333', $admin['phone']);
+        $this->assertSame('hana@example.com', $admin['email']);
+        $this->assertSame('Sara Bekele', $admin['emergencyContactName']);
+        $this->assertSame('1000123456789', $admin['accountNumber']);
+        $this->assertSame('ID-9988', $admin['idNumber']);
+        $this->assertSame('Dawit Alemu', $admin['references'][0]['name']);
+        $this->assertSame('Addis Expo', $admin['experiences'][0]['event']);
+
+        $client = collect($this->getJson('/api/public/client/'.$project->client_token)->assertOk()->json('ushers'))
+            ->firstWhere('name', 'Hana Bekele');
+        $this->assertSame('Bachelor’s degree', $client['educationLevel']);
+        $this->assertSame('Host', $client['occupation']);
+        $this->assertSame('Weekends', $client['availability']);
+        $this->assertSame('M', $client['tshirtSize']);
+        foreach (['phone', 'email', 'address', 'telegram', 'emergencyContactName', 'emergencyContactPhone', 'bankName', 'accountNumber', 'telebirrNumber', 'idNumber', 'references'] as $hidden) {
+            $this->assertArrayNotHasKey($hidden, $client);
+        }
+    }
+
     public function test_guests_cannot_delete_records(): void
     {
         $this->seed();
