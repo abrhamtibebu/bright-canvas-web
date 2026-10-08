@@ -10,6 +10,13 @@ class WorkspaceController extends Controller
 {
     public function show(): JsonResponse
     {
-        return response()->json(WorkspaceSetting::query()->firstOrFail()->present());
+        $setting = WorkspaceSetting::query()->firstOrCreate([], [
+            'company' => 'Validity Event & Marketing',
+            'workspace' => 'Usher Directory',
+            'timezone' => 'Addis Ababa (UTC+3)',
+            'currency' => 'Ethiopian birr (ETB)',
+        ]);
+
+        return response()->json($setting->present());
     }
 }
