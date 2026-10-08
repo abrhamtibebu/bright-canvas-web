@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Assignment extends Model
 {
@@ -16,6 +17,13 @@ class Assignment extends Model
         return [
             'client_selected' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Assignment $assignment) {
+            $assignment->confirmation_token ??= Str::random(40);
+        });
     }
 
     public function project(): BelongsTo
@@ -50,6 +58,19 @@ class Assignment extends Model
             'response' => $this->response,
             'attendance' => $this->attendance,
             'clientSelected' => $this->client_selected,
+            'confirmationToken' => $this->ensureConfirmationToken(),
         ];
+    }
+
+    public function ensureConfirmationToken(): string
+    {
+        if (is_string($this->confirmation_token) && $this->confirmation_token !== '') {
+            return $this->confirmation_token;
+        }
+
+        $this->confirmation_token = Str::random(40);
+        $this->save();
+
+        return $this->confirmation_token;
     }
 }

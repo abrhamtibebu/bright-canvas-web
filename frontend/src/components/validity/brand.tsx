@@ -64,15 +64,34 @@ export function UsherPhotos({ usher, onRemove }: { usher: Usher; onRemove?: (pat
 
 function PhotoTile({ path, alt, onRemove }: { path: string; alt: string; onRemove?: (path: string) => void }) {
   const photo = usePhoto(path);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   if (photo.state === "missing") return null;
   if (!photo.src) return <div className="photo-tile" aria-hidden="true" />;
   return (
     <div className="photo-frame">
-      <img className="photo-tile" src={photo.src} alt={alt} />
+      <button type="button" className="photo-open" aria-label={`Expand ${alt}`} onClick={() => setOpen(true)}>
+        <img className="photo-tile" src={photo.src} alt={alt} />
+      </button>
       {onRemove && (
         <Button type="button" variant="destructive" size="sm" className="photo-remove" onClick={() => onRemove(path)}>
           Remove
         </Button>
+      )}
+      {open && (
+        <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={alt} onClick={() => setOpen(false)}>
+          <img src={photo.src} alt={alt} onClick={(event) => event.stopPropagation()} />
+          <button type="button" className="photo-lightbox-close" onClick={() => setOpen(false)}>
+            Close
+          </button>
+        </div>
       )}
     </div>
   );

@@ -366,6 +366,43 @@ class ValidityApiTest extends TestCase
         }
     }
 
+    public function test_personal_confirmation_link_confirms_only_that_usher(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $project = Project::query()->where('name', 'Big 5 Construct Ethiopia')->firstOrFail();
+        $usher = Usher::query()->where('status', 'Active')->firstOrFail();
+        $this->postJson('/api/projects/'.$project->id.'/invitations', [
+            'usher_ids' => [$usher->id],
+        ])->assertOk();
+
+        $assignment = Assignment::query()
+            ->where('project_id', $project->id)
+            ->where('usher_id', $usher->id)
+            ->firstOrFail();
+
+        $this->assertNotEmpty($assignment->confirmation_token);
+        $listed = collect($this->getJson('/api/assignments')->assertOk()->json())->firstWhere('id', $assignment->id);
+        $this->assertSame($assignment->confirmation_token, $listed['confirmationToken']);
+
+        $this->getJson('/api/public/confirm/'.$assignment->confirmation_token)
+            ->assertOk()
+            ->assertJsonPath('usher.name', $usher->name)
+            ->assertJsonPath('project.name', $project->name)
+            ->assertJsonMissingPath('usher.phone');
+
+        $this->postJson('/api/public/confirm/'.$assignment->confirmation_token, [
+            'response' => 'Confirmed',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('assignments', [
+            'id' => $assignment->id,
+            'response' => 'Confirmed',
+        ]);
+        $this->getJson('/api/public/confirm/not-a-real-token')->assertNotFound();
+    }
+
     public function test_guests_cannot_delete_records(): void
     {
         $this->seed();

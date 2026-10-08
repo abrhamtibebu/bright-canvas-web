@@ -9,13 +9,13 @@ import {LoadingMark,UsherPhotos} from './brand';
 type PublicProject={name:string;date:string;location:string;callTime:string;endTime:string;compensation:string;transport:string;dressCode:string;transportProvided?:boolean;foodProvided?:boolean};
 type Named={id:number;name:string};
 
-export function ShareLinkButton({path,title,description,label,message,variant='default',disabled}:{path:string;title:string;description:string;label:string;message:string;variant?:'default'|'outline';disabled?:boolean}){
+export function ShareLinkButton({path,title,description,label,message,variant='default',size='default',disabled}:{path:string;title:string;description:string;label:string;message:string;variant?:'default'|'outline';size?:'default'|'sm';disabled?:boolean}){
   const [open,setOpen]=useState(false);const [copied,setCopied]=useState(false);
   const url=typeof window!=='undefined'?`${window.location.origin}${path}`:path;
   const text=`${message} ${url}`;
   const copy=async()=>{try{await navigator.clipboard.writeText(url);}catch{const t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}setCopied(true);setTimeout(()=>setCopied(false),2000);};
   const nativeShare=async()=>{if(navigator.share){try{await navigator.share({title,text:message,url});}catch{/* cancelled */}}else copy();};
-  return <><Button variant={variant} disabled={disabled} onClick={()=>setOpen(true)}><Link2/>{label}</Button>
+  return <><Button variant={variant} size={size} disabled={disabled} onClick={()=>setOpen(true)}><Link2/>{label}</Button>
   <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription>
     <div className="share-url"><input readOnly aria-label="Shareable link" value={url} onFocus={e=>e.currentTarget.select()}/><Button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'Copied':'Copy link'}</Button></div>
     <div className="share-grid">
@@ -118,6 +118,16 @@ export function RatePage({id}:{id:string}){
   return <PublicShell><div className="public-card"><ProjectHead project={project}/><h2 className="mb-1">Rate your event team</h2><p className="subtext mb-4">How did each usher perform?</p>
     {team.map(u=><div className="review-row" key={u.id}><Avatar usher={u}/><div className="flex-1"><h3>{u.name}</h3><textarea className="w-full mt-2" rows={2} placeholder="Optional comment" value={comments[u.id]??''} onChange={e=>setComments(c=>({...c,[u.id]:e.target.value}))}/></div><div className="stars" role="radiogroup" aria-label={`Rate ${u.name}`}>{[1,2,3,4,5].map(n=><button type="button" key={n} aria-label={`${n} stars`} className={(scores[u.id]||0)>=n?'on':''} onClick={()=>setScores(s=>({...s,[u.id]:n}))}><Star/></button>)}</div></div>)}
     <Button className="w-full mt-5" disabled={!team.length||Object.keys(scores).length<team.length} onClick={()=>api(`/api/public/ratings/${id}`,{method:'POST',body:JSON.stringify({ratings:team.map(u=>({usher_id:u.id,score:scores[u.id],comment:comments[u.id]??''}))})}).then(()=>setDone(true)).catch(()=>setNote('Could not submit your ratings. Try again.'))}><Check/>Submit ratings</Button>{note&&<p role="alert" className="text-warning mt-4">{note}</p>}</div></PublicShell>;
+}
+
+export function IndividualRespondPage({token}:{token:string}){
+  const [project,setProject]=useState<PublicProject|null>(null);const [usher,setUsher]=useState<Named|null>(null);const [answer,setAnswer]=useState('');const [error,setError]=useState('');const [note,setNote]=useState('');
+  useEffect(()=>{void api<{project:PublicProject;usher:Named}>(`/api/public/confirm/${token}`).then(data=>{setProject(data.project);setUsher(data.usher)}).catch(()=>setError('This confirmation link is not valid.'))},[token]);
+  if(answer)return <PublicShell><div className="public-card center"><CheckCircle2 className="big-icon"/><h1>{answer==='Confirmed'?'You’re confirmed!':'Thanks for letting us know'}</h1><p className="subtext">{answer==='Confirmed'?'We’ll share the call time and final details closer to the event.':'We hope to work with you on the next event.'}</p></div></PublicShell>;
+  if(error)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{error}</p></div></PublicShell>;
+  if(!project||!usher)return <PublicShell><LoadingMark label="Loading invitation…" /></PublicShell>;
+  return <PublicShell><div className="public-card"><ProjectHead project={project}/><h2 className="mb-3">Confirm your availability</h2><p className="subtext mb-4">Hi {usher.name}. This link is only for you.</p><EventFacts project={project}/>
+    <div className="toolbar"><Button onClick={()=>api(`/api/public/confirm/${token}`,{method:'POST',body:JSON.stringify({response:'Confirmed'})}).then(()=>setAnswer('Confirmed')).catch(()=>setNote('Could not save your response. Try again.'))}><Check/>I’m available</Button><Button variant="outline" onClick={()=>api(`/api/public/confirm/${token}`,{method:'POST',body:JSON.stringify({response:'Declined'})}).then(()=>setAnswer('Declined')).catch(()=>setNote('Could not save your response. Try again.'))}>Not available</Button></div>{note&&<p role="alert" className="text-warning mt-4">{note}</p>}</div></PublicShell>;
 }
 
 export function LoginPage(){

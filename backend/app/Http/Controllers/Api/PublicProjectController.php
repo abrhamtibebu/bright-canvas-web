@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Assignment;
 use App\Models\Project;
 use App\Models\Rating;
 use App\Models\Usher;
@@ -37,6 +38,31 @@ class PublicProjectController extends Controller
         ]);
 
         $assignment = $project->assignments()->where('usher_id', $data['usher_id'])->firstOrFail();
+        $assignment->update(['response' => $data['response']]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function confirm(string $token): JsonResponse
+    {
+        $assignment = $this->assignmentByToken($token);
+
+        return response()->json([
+            'project' => $assignment->project->presentPublic(),
+            'usher' => [
+                'id' => $assignment->usher_id,
+                'name' => $assignment->usher->name,
+            ],
+            'response' => $assignment->response,
+        ]);
+    }
+
+    public function confirmResponse(Request $request, string $token): JsonResponse
+    {
+        $assignment = $this->assignmentByToken($token);
+        $data = $request->validate([
+            'response' => ['required', 'in:Confirmed,Declined'],
+        ]);
         $assignment->update(['response' => $data['response']]);
 
         return response()->json(['ok' => true]);
@@ -119,6 +145,14 @@ class PublicProjectController extends Controller
         abort_unless($confirmed, 404);
 
         return StoredPhoto::response($photo->path);
+    }
+
+    private function assignmentByToken(string $token): Assignment
+    {
+        return Assignment::query()
+            ->where('confirmation_token', $token)
+            ->with(['project', 'usher'])
+            ->firstOrFail();
     }
 
     private function project(string $column, string $token): Project

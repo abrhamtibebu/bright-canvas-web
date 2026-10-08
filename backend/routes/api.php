@@ -42,6 +42,8 @@ Route::get('/public/photos/{token}/{photo}', [PublicProjectController::class, 'p
 Route::post('/public/register/{token}', [PublicRegistrationController::class, 'store']);
 Route::get('/public/availability/{token}', [PublicProjectController::class, 'availability']);
 Route::post('/public/availability/{token}', [PublicProjectController::class, 'respond']);
+Route::get('/public/confirm/{token}', [PublicProjectController::class, 'confirm']);
+Route::post('/public/confirm/{token}', [PublicProjectController::class, 'confirmResponse']);
 Route::get('/public/client/{token}', [PublicProjectController::class, 'team']);
 Route::post('/public/client/{token}', [PublicProjectController::class, 'select']);
 Route::get('/public/ratings/{token}', [PublicProjectController::class, 'ratings']);

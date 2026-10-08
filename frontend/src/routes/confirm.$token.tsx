@@ -1,0 +1,3 @@
+import {createFileRoute} from '@tanstack/react-router';
+import {IndividualRespondPage} from '@/components/validity/links';
+export const Route=createFileRoute('/confirm/$token')({head:()=>({meta:[{title:'Confirm your availability — Validity'},{name:'description',content:'Confirm your availability for a Validity Events project.'},{property:'og:title',content:'Confirm your availability — Validity'},{property:'og:description',content:'Confirm your availability for a Validity event.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),component:function P(){const {token}=Route.useParams();return <IndividualRespondPage token={token}/>}});

@@ -4,7 +4,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { api, logout } from "@/lib/api";
 import type { Admin, Assignment, Project, Reports, Usher, WorkspaceInfo } from "@/lib/demo-data";
 
-const publicPrefixes = ["/register", "/respond", "/client", "/rate", "/login"];
+const publicPrefixes = ["/register", "/respond", "/confirm", "/client", "/rate", "/login"];
 
 type WorkspaceData = {
   me: Admin | null;

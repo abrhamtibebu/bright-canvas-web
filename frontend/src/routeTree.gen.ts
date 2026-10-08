@@ -19,6 +19,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ClientIdRouteImport } from './routes/client.$id'
+import { Route as ConfirmTokenRouteImport } from './routes/confirm.$token'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as RateIdRouteImport } from './routes/rate.$id'
@@ -75,6 +76,11 @@ const ClientIdRoute = ClientIdRouteImport.update({
   path: '/client/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfirmTokenRoute = ConfirmTokenRouteImport.update({
+  id: '/confirm/$token',
+  path: '/confirm/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
+  '/confirm/$token': typeof ConfirmTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
+  '/confirm/$token': typeof ConfirmTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
+  '/confirm/$token': typeof ConfirmTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/verification'
     | '/client/$id'
+    | '/confirm/$token'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/verification'
     | '/client/$id'
+    | '/confirm/$token'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/verification'
     | '/client/$id'
+    | '/confirm/$token'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
@@ -216,6 +228,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   VerificationRoute: typeof VerificationRoute
   ClientIdRoute: typeof ClientIdRoute
+  ConfirmTokenRoute: typeof ConfirmTokenRoute
   RateIdRoute: typeof RateIdRoute
   RegisterTokenRoute: typeof RegisterTokenRoute
   RespondIdRoute: typeof RespondIdRoute
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/confirm/$token': {
+      id: '/confirm/$token'
+      path: '/confirm/$token'
+      fullPath: '/confirm/$token'
+      preLoaderRoute: typeof ConfirmTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/': {
       id: '/projects/'
       path: '/'
@@ -356,6 +376,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   VerificationRoute: VerificationRoute,
   ClientIdRoute: ClientIdRoute,
+  ConfirmTokenRoute: ConfirmTokenRoute,
   RateIdRoute: RateIdRoute,
   RegisterTokenRoute: RegisterTokenRoute,
   RespondIdRoute: RespondIdRoute,

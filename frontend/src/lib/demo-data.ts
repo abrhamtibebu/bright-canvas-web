@@ -104,6 +104,7 @@ export type Assignment = {
   response: string;
   attendance: string;
   clientSelected: boolean;
+  confirmationToken?: string;
 };
 
 export type WorkspaceInfo = {
