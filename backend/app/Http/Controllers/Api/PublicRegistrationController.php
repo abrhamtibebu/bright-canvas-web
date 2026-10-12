@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Usher;
 use App\Models\WorkspaceSetting;
+use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -110,7 +111,7 @@ class PublicRegistrationController extends Controller
             if (! $request->hasFile($field)) {
                 continue;
             }
-            $path = $request->file($field)->store('ushers/'.$usher->id, 'local');
+            $path = $request->file($field)->store('ushers/'.$usher->id, StoredPhoto::disk());
             $usher->photos()->create(['path' => $path, 'kind' => $kind]);
         }
 

@@ -9,7 +9,7 @@ use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class UsherController extends Controller
 {
@@ -74,7 +74,7 @@ class UsherController extends Controller
         return response()->json($usher->present());
     }
 
-    public function photo(Usher $usher, UsherPhoto $photo): BinaryFileResponse
+    public function photo(Usher $usher, UsherPhoto $photo): SymfonyResponse
     {
         abort_unless($photo->usher_id === $usher->id, 404);
 
@@ -87,7 +87,7 @@ class UsherController extends Controller
             'photo' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
         ]);
 
-        $path = $data['photo']->store('ushers/'.$usher->id, 'local');
+        $path = $data['photo']->store('ushers/'.$usher->id, StoredPhoto::disk());
         $usher->photos()->create([
             'path' => $path,
             'kind' => $usher->photos()->where('kind', 'profile')->exists() ? 'additional' : 'profile',

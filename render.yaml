@@ -33,6 +33,20 @@ services:
         value: database
       - key: LOG_CHANNEL
         value: stderr
+      - key: PHOTOS_DISK
+        value: s3
+      - key: AWS_DEFAULT_REGION
+        value: auto
+      - key: AWS_USE_PATH_STYLE_ENDPOINT
+        value: "true"
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_BUCKET
+        sync: false
+      - key: AWS_ENDPOINT
+        sync: false
     disk:
       name: validity-storage
       mountPath: /var/www/html/storage/app

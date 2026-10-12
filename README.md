@@ -31,7 +31,17 @@ Local admin: `admin@validity.et` / `ValidityAdmin@2026`
 
 ## Render
 
-The API is set up to deploy as a Docker web service with Render Postgres. [`render.yaml`](render.yaml) defines the service, database, and a persistent disk for registration photos.
+The API is set up to deploy as a Docker web service with Render Postgres. [`render.yaml`](render.yaml) defines the service, database, and optional disk.
+
+Usher photos use the `PHOTOS_DISK` filesystem. Locally that stays `local`. In production set `PHOTOS_DISK=s3` and point the `s3` disk at a private Cloudflare R2 bucket:
+
+- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` — R2 API token
+- `AWS_BUCKET` — bucket name
+- `AWS_ENDPOINT` — `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
+- `AWS_DEFAULT_REGION=auto`
+- `AWS_USE_PATH_STYLE_ENDPOINT=true`
+
+Keep the bucket private. The API still streams photos after admin or client-token checks.
 
 After connecting the repository in Render, set:
 
@@ -39,6 +49,7 @@ After connecting the repository in Render, set:
 - `APP_URL` — the service URL, including `https://`
 - `FRONTEND_URL` — the web app origin
 - `SANCTUM_STATEFUL_DOMAINS` — that same frontend host, without the scheme
+- R2 variables above when using cloud photo storage
 
 Build the frontend with `VITE_API_URL` set to the API origin, including `https://`. Vite reads that value at build time.
 

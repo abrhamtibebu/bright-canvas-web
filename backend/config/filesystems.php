@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Usher photo disk
+    |--------------------------------------------------------------------------
+    |
+    | Use "s3" with Cloudflare R2 credentials in production. Keep "local" for
+    | development and tests. Legacy files under storage/app are still readable.
+    |
+    */
+
+    'photos' => env('PHOTOS_DISK', env('FILESYSTEM_DISK', 'local')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -47,11 +59,13 @@ return [
             'report' => false,
         ],
 
+        // Cloudflare R2: set AWS_ENDPOINT to https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+        // and AWS_DEFAULT_REGION=auto, AWS_USE_PATH_STYLE_ENDPOINT=true, PHOTOS_DISK=s3.
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
+            'region' => env('AWS_DEFAULT_REGION', 'auto'),
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),

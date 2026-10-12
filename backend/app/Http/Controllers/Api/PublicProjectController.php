@@ -11,7 +11,7 @@ use App\Models\UsherPhoto;
 use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class PublicProjectController extends Controller
 {
@@ -131,7 +131,7 @@ class PublicProjectController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function photo(string $token, UsherPhoto $photo): BinaryFileResponse
+    public function photo(string $token, UsherPhoto $photo): SymfonyResponse
     {
         $project = Project::query()
             ->where(fn ($query) => $query->where('client_token', $token)->orWhere('rating_token', $token))

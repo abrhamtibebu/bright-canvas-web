@@ -2,16 +2,69 @@
 
 namespace App\Support;
 
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 
 class StoredPhoto
 {
     /** @var array<string, string>|null */
     private static ?array $index = null;
 
+    public static function disk(): string
+    {
+        return (string) config('filesystems.photos', config('filesystems.default', 'local'));
+    }
+
     public static function locate(string $path): ?string
     {
         $path = ltrim($path, '/');
+        if ($path === '') {
+            return null;
+        }
+
+        if (Storage::disk(self::disk())->exists($path)) {
+            return $path;
+        }
+
+        return self::localPath($path);
+    }
+
+    public static function response(string $path): Response
+    {
+        $path = ltrim($path, '/');
+        abort_unless($path !== '', 404);
+
+        if (Storage::disk(self::disk())->exists($path)) {
+            return Storage::disk(self::disk())->response($path);
+        }
+
+        $full = self::localPath($path);
+        abort_unless($full !== null, 404);
+
+        return response()->file($full);
+    }
+
+    public static function delete(string $path): void
+    {
+        $path = ltrim($path, '/');
+        if ($path === '') {
+            return;
+        }
+
+        $disk = Storage::disk(self::disk());
+        if ($disk->exists($path)) {
+            $disk->delete($path);
+        }
+
+        $full = self::localPath($path);
+        if ($full !== null) {
+            unlink($full);
+            self::$index = null;
+        }
+    }
+
+    private static function localPath(string $path): ?string
+    {
         foreach ([storage_path('app/private/'.$path), storage_path('app/'.$path), storage_path('app/public/'.$path)] as $full) {
             if (is_file($full)) {
                 return $full;
@@ -72,22 +125,6 @@ class StoredPhoto
             if (is_dir($full)) {
                 self::walk($full, $depth + 1);
             }
-        }
-    }
-
-    public static function response(string $path): BinaryFileResponse
-    {
-        $full = self::locate($path);
-        abort_unless($full !== null, 404);
-
-        return response()->file($full);
-    }
-
-    public static function delete(string $path): void
-    {
-        $full = self::locate($path);
-        if ($full !== null) {
-            unlink($full);
         }
     }
 }
