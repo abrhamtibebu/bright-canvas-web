@@ -111,7 +111,7 @@ class PublicRegistrationController extends Controller
             if (! $request->hasFile($field)) {
                 continue;
             }
-            $path = $request->file($field)->store('ushers/'.$usher->id, StoredPhoto::disk());
+            $path = StoredPhoto::store($request->file($field), 'ushers/'.$usher->id);
             $usher->photos()->create(['path' => $path, 'kind' => $kind]);
         }
 

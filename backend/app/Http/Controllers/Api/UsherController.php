@@ -87,7 +87,7 @@ class UsherController extends Controller
             'photo' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
         ]);
 
-        $path = $data['photo']->store('ushers/'.$usher->id, StoredPhoto::disk());
+        $path = StoredPhoto::store($data['photo'], 'ushers/'.$usher->id);
         $usher->photos()->create([
             'path' => $path,
             'kind' => $usher->photos()->where('kind', 'profile')->exists() ? 'additional' : 'profile',

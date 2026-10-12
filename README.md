@@ -35,11 +35,13 @@ The API is set up to deploy as a Docker web service with Render Postgres. [`rend
 
 Usher photos use the `PHOTOS_DISK` filesystem. Locally that stays `local`. In production set `PHOTOS_DISK=s3` and point the `s3` disk at a private Cloudflare R2 bucket:
 
-- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` — R2 API token
-- `AWS_BUCKET` — bucket name
+- `PHOTOS_DISK=s3`
+- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` — R2 API token with Object Read & Write
+- `AWS_BUCKET` — exact bucket name (currently `validity-usher`)
 - `AWS_ENDPOINT` — `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
 - `AWS_DEFAULT_REGION=auto`
 - `AWS_USE_PATH_STYLE_ENDPOINT=true`
+- Leave `AWS_URL` empty so photos stay private and stream through the API
 
 Keep the bucket private. The API still streams photos after admin or client-token checks.
 

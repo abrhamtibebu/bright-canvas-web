@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,6 +14,16 @@ class StoredPhoto
     public static function disk(): string
     {
         return (string) config('filesystems.photos', config('filesystems.default', 'local'));
+    }
+
+    public static function store(UploadedFile $file, string $directory): string
+    {
+        $path = $file->store(trim($directory, '/'), self::disk());
+        if (! is_string($path) || $path === '') {
+            abort(500, 'Photo could not be stored.');
+        }
+
+        return $path;
     }
 
     public static function locate(string $path): ?string
