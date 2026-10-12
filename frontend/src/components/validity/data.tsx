@@ -40,6 +40,7 @@ type WorkspaceData = {
   invite: (projectId: number, usherIds: number[]) => Promise<void>;
   setResponse: (assignmentId: number, response: string) => Promise<void>;
   setAttendance: (assignmentId: number, attendance: string) => Promise<void>;
+  setPaymentStatus: (assignmentId: number, paymentStatus: string) => Promise<void>;
   selectTeam: (projectId: number, usherIds: number[]) => Promise<void>;
   rateUsher: (projectId: number, usherId: number, score: string, comment: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -170,6 +171,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       await api(`/api/assignments/${assignmentId}`, {
         method: "PATCH",
         body: JSON.stringify({ attendance }),
+      });
+      await refresh();
+    },
+    setPaymentStatus: async (assignmentId, paymentStatus) => {
+      await api(`/api/assignments/${assignmentId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ payment_status: paymentStatus }),
       });
       await refresh();
     },

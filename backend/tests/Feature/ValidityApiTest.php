@@ -438,4 +438,63 @@ class ValidityApiTest extends TestCase
                 'clientSatisfaction',
             ]);
     }
+
+    public function test_admin_can_mark_assignment_paid_and_export_csvs(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $project = Project::query()->where('name', 'Big 5 Construct Ethiopia')->firstOrFail();
+        $usher = Usher::query()->where('status', 'Active')->firstOrFail();
+        $usher->update([
+            'payment_method' => 'Bank transfer',
+            'bank_name' => 'CBE',
+            'account_holder' => $usher->name,
+            'account_number' => '1000123456',
+        ]);
+
+        $this->postJson('/api/projects/'.$project->id.'/invitations', [
+            'usher_ids' => [$usher->id],
+        ])->assertOk();
+
+        $assignment = Assignment::query()
+            ->where('project_id', $project->id)
+            ->where('usher_id', $usher->id)
+            ->firstOrFail();
+
+        $this->patchJson('/api/assignments/'.$assignment->id, [
+            'response' => 'Confirmed',
+        ])->assertOk();
+
+        $payments = $this->getJson('/api/projects/'.$project->id.'/payments')
+            ->assertOk()
+            ->json();
+
+        $this->assertSame('Unpaid', $payments['rows'][0]['paymentStatus']);
+        $this->assertSame('CBE', $payments['rows'][0]['bankName']);
+
+        $this->patchJson('/api/assignments/'.$assignment->id, [
+            'payment_status' => 'Paid',
+        ])->assertOk()->assertJsonPath('paymentStatus', 'Paid');
+
+        $this->assertDatabaseHas('assignments', [
+            'id' => $assignment->id,
+            'payment_status' => 'Paid',
+        ]);
+
+        $this->get('/api/export/ushers')->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->get('/api/export/projects')->assertOk();
+        $this->get('/api/projects/'.$project->id.'/payments/export')->assertOk();
+    }
+
+    public function test_guests_cannot_export_or_view_payments(): void
+    {
+        $this->seed();
+        $project = Project::query()->firstOrFail();
+
+        $this->get('/api/export/ushers')->assertUnauthorized();
+        $this->get('/api/export/projects')->assertUnauthorized();
+        $this->getJson('/api/projects/'.$project->id.'/payments')->assertUnauthorized();
+        $this->get('/api/projects/'.$project->id.'/payments/export')->assertUnauthorized();
+    }
 }

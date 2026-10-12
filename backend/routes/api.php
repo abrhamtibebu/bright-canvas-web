@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AssignmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ExportController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\PublicProjectController;
 use App\Http\Controllers\Api\PublicRegistrationController;
@@ -35,6 +37,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/assignments', [AssignmentController::class, 'index']);
     Route::patch('/assignments/{assignment}', [AssignmentController::class, 'update']);
     Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy']);
+    Route::get('/projects/{project}/payments', [PaymentController::class, 'show']);
+    Route::get('/projects/{project}/payments/export', [ExportController::class, 'payments']);
+    Route::get('/export/ushers', [ExportController::class, 'ushers']);
+    Route::get('/export/projects', [ExportController::class, 'projects']);
     Route::get('/reports', [ReportController::class, 'show']);
 });
 

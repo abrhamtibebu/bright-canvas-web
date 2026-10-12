@@ -26,6 +26,7 @@ class AssignmentController extends Controller
         $data = $request->validate([
             'response' => ['sometimes', 'in:Invited,Confirmed,Declined'],
             'attendance' => ['sometimes', 'in:Expected,Checked in,Checked out'],
+            'payment_status' => ['sometimes', 'in:Paid,Unpaid'],
         ]);
 
         $assignment->fill($data)->save();

@@ -105,7 +105,23 @@ export type Assignment = {
   response: string;
   attendance: string;
   clientSelected: boolean;
+  paymentStatus?: string;
   confirmationToken?: string;
+};
+
+export type PaymentRow = {
+  assignmentId: number;
+  usherId: number;
+  name: string;
+  phone: string;
+  role: string;
+  compensation: string;
+  paymentStatus: string;
+  paymentMethod?: string | null;
+  bankName?: string | null;
+  accountHolder?: string | null;
+  accountNumber?: string | null;
+  telebirrNumber?: string | null;
 };
 
 export type WorkspaceInfo = {

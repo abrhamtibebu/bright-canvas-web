@@ -14,12 +14,15 @@ import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as InvitationsRouteImport } from './routes/invitations'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ClientIdRouteImport } from './routes/client.$id'
 import { Route as ConfirmTokenRouteImport } from './routes/confirm.$token'
+import { Route as PaymentsIndexRouteImport } from './routes/payments.index'
+import { Route as PaymentsIdRouteImport } from './routes/payments.$id'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as RateIdRouteImport } from './routes/rate.$id'
@@ -51,6 +54,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentsRoute = PaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -80,6 +88,16 @@ const ConfirmTokenRoute = ConfirmTokenRouteImport.update({
   id: '/confirm/$token',
   path: '/confirm/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentsIndexRoute = PaymentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PaymentsRoute,
+} as any)
+const PaymentsIdRoute = PaymentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PaymentsRoute,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/',
@@ -113,16 +131,19 @@ export interface FileRoutesByFullPath {
   '/directory': typeof DirectoryRoute
   '/invitations': typeof InvitationsRoute
   '/login': typeof LoginRoute
+  '/payments': typeof PaymentsRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
+  '/payments/$id': typeof PaymentsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
   '/respond/$id': typeof RespondIdRoute
+  '/payments/': typeof PaymentsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -136,10 +157,12 @@ export interface FileRoutesByTo {
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
+  '/payments/$id': typeof PaymentsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
   '/respond/$id': typeof RespondIdRoute
+  '/payments': typeof PaymentsIndexRoute
   '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesById {
@@ -149,16 +172,19 @@ export interface FileRoutesById {
   '/directory': typeof DirectoryRoute
   '/invitations': typeof InvitationsRoute
   '/login': typeof LoginRoute
+  '/payments': typeof PaymentsRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
+  '/payments/$id': typeof PaymentsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
   '/respond/$id': typeof RespondIdRoute
+  '/payments/': typeof PaymentsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRouteTypes {
@@ -169,16 +195,19 @@ export interface FileRouteTypes {
     | '/directory'
     | '/invitations'
     | '/login'
+    | '/payments'
     | '/projects'
     | '/reports'
     | '/settings'
     | '/verification'
     | '/client/$id'
     | '/confirm/$token'
+    | '/payments/$id'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
     | '/respond/$id'
+    | '/payments/'
     | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -192,10 +221,12 @@ export interface FileRouteTypes {
     | '/verification'
     | '/client/$id'
     | '/confirm/$token'
+    | '/payments/$id'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
     | '/respond/$id'
+    | '/payments'
     | '/projects'
   id:
     | '__root__'
@@ -204,16 +235,19 @@ export interface FileRouteTypes {
     | '/directory'
     | '/invitations'
     | '/login'
+    | '/payments'
     | '/projects'
     | '/reports'
     | '/settings'
     | '/verification'
     | '/client/$id'
     | '/confirm/$token'
+    | '/payments/$id'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
     | '/respond/$id'
+    | '/payments/'
     | '/projects/'
   fileRoutesById: FileRoutesById
 }
@@ -223,6 +257,7 @@ export interface RootRouteChildren {
   DirectoryRoute: typeof DirectoryRoute
   InvitationsRoute: typeof InvitationsRoute
   LoginRoute: typeof LoginRoute
+  PaymentsRoute: typeof PaymentsRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
@@ -271,6 +306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payments': {
+      id: '/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof PaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects': {
       id: '/projects'
       path: '/projects'
@@ -313,6 +355,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payments/': {
+      id: '/payments/'
+      path: '/'
+      fullPath: '/payments/'
+      preLoaderRoute: typeof PaymentsIndexRouteImport
+      parentRoute: typeof PaymentsRoute
+    }
+    '/payments/$id': {
+      id: '/payments/$id'
+      path: '/$id'
+      fullPath: '/payments/$id'
+      preLoaderRoute: typeof PaymentsIdRouteImport
+      parentRoute: typeof PaymentsRoute
+    }
     '/projects/': {
       id: '/projects/'
       path: '/'
@@ -351,6 +407,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PaymentsRouteChildren {
+  PaymentsIdRoute: typeof PaymentsIdRoute
+  PaymentsIndexRoute: typeof PaymentsIndexRoute
+}
+
+const PaymentsRouteChildren: PaymentsRouteChildren = {
+  PaymentsIdRoute: PaymentsIdRoute,
+  PaymentsIndexRoute: PaymentsIndexRoute,
+}
+
+const PaymentsRouteWithChildren = PaymentsRoute._addFileChildren(
+  PaymentsRouteChildren,
+)
+
 interface ProjectsRouteChildren {
   ProjectsIdRoute: typeof ProjectsIdRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -371,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   DirectoryRoute: DirectoryRoute,
   InvitationsRoute: InvitationsRoute,
   LoginRoute: LoginRoute,
+  PaymentsRoute: PaymentsRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,

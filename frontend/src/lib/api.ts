@@ -61,6 +61,26 @@ export async function authorizedBlob(path: string): Promise<string | null> {
   return URL.createObjectURL(await response.blob());
 }
 
+export async function downloadCsv(path: string, filename: string): Promise<void> {
+  const token = authToken();
+  const headers = new Headers();
+  headers.set("Accept", "text/csv");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(apiUrl(path), { headers });
+  if (!response.ok) {
+    throw new ApiError(response.status, "Could not download the CSV export.");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function login(email: string, password: string) {
   const user = await api<{ name: string; email: string; token: string }>("/api/login", {
     method: "POST",

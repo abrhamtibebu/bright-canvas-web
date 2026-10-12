@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class Assignment extends Model
 {
     protected $fillable = [
-        'project_id', 'usher_id', 'role', 'response', 'attendance', 'client_selected',
+        'project_id', 'usher_id', 'role', 'response', 'attendance', 'client_selected', 'payment_status',
     ];
 
     protected function casts(): array
@@ -58,6 +58,7 @@ class Assignment extends Model
             'response' => $this->response,
             'attendance' => $this->attendance,
             'clientSelected' => $this->client_selected,
+            'paymentStatus' => $this->payment_status ?? 'Unpaid',
             'confirmationToken' => $this->ensureConfirmationToken(),
         ];
     }
