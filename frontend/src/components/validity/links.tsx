@@ -1,8 +1,8 @@
-import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {useEffect,useRef,useState,type HTMLAttributes,type ReactNode} from 'react';
 import {Copy,Check,Send,MessageCircle,Mail,Link2,Star,CheckCircle2,CalendarDays,MapPin} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
-import {api,login} from '@/lib/api';
+import {ApiError,api,login} from '@/lib/api';
 import type {Usher} from '@/lib/demo-data';
 import {Avatar} from './workspace';
 import {LoadingMark,UsherPhotos} from './brand';
@@ -30,40 +30,118 @@ export function ShareLinkButton({path,title,description,label,message,variant='d
 export function PublicShell({children,variant}:{children:ReactNode;variant?:'reg'|'client'}){return <div className={`public-shell${variant?` public-shell-${variant}`:''}`}>{variant!=='reg'&&<header className="public-header"><img src="/validity-events-logo.svg" alt="Validity Events" className="logo"/></header>}<main className="public-main">{children}</main><footer className="public-footer">© 2026 Validity Events</footer></div>}
 
 function Section({title,children}:{title:string;children:ReactNode}){return <fieldset className="form-section"><legend>{title}</legend><div className="form-grid">{children}</div></fieldset>}
-function F({label,name,type='text',required,full,options,placeholder}:{label:string;name:string;type?:string;required?:boolean;full?:boolean;options?:string[];placeholder?:string}){return <label className={full?'full':''}>{label}{required&&<span className="text-primary"> *</span>}{options?<select name={name} required={required} defaultValue=""><option value="" disabled>Select…</option>{options.map(o=><option key={o}>{o}</option>)}</select>:type==='textarea'?<textarea name={name} rows={3} placeholder={placeholder}/>:<input name={name} type={type} required={required} placeholder={placeholder} accept={type==='file'?'image/*':undefined}/>}</label>}
+function adultDobMax(){const d=new Date();d.setFullYear(d.getFullYear()-18);return d.toISOString().slice(0,10)}
+function F({label,name,type='text',required,full,options,placeholder,max,title,pattern,inputMode}:{label:string;name:string;type?:string;required?:boolean;full?:boolean;options?:string[];placeholder?:string;max?:string;title?:string;pattern?:string;inputMode?:HTMLAttributes<HTMLInputElement>['inputMode']}){return <label className={full?'full':''}>{label}{required&&<span className="text-primary"> *</span>}{options?<select name={name} required={required} defaultValue=""><option value="" disabled>Select…</option>{options.map(o=><option key={o}>{o}</option>)}</select>:type==='textarea'?<textarea name={name} rows={3} placeholder={placeholder}/>:<input name={name} type={type} required={required} placeholder={placeholder} max={max} title={title} pattern={pattern} inputMode={inputMode}/>}</label>}
 function Checks({label,name,items}:{label:string;name:string;items:string[]}){return <div className="full"><div className="check-label">{label}</div><div className="check-grid">{items.map(i=><label key={i} className="check-item"><input type="checkbox" name={`${name}[]`} value={i}/>{i}</label>)}</div></div>}
 function AddMore({label,children}:{label:string;children:ReactNode}){const [open,setOpen]=useState(false);return <div className="reg-add-more full"><button type="button" className="reg-add-more-toggle" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?'Hide':'Add more'} — {label}</button>{open&&<div className="reg-add-more-body form-grid">{children}</div>}</div>}
+function PhotoPicker({files,onChange,required}:{files:File[];onChange:(files:File[])=>void;required?:boolean}){
+  const [note,setNote]=useState('');
+  return <div className="full reg-photos">
+    <label>Photos{required&&<span className="text-primary"> *</span>}<span className="subtext"> — select up to 3 at once; first is your profile photo</span>
+      <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple required={required&&files.length===0} onChange={e=>{
+        const picked=Array.from(e.target.files??[]).filter(f=>f.type.startsWith('image/'));
+        setNote(picked.length>3?'Only the first 3 images were kept.':'');
+        onChange(picked.slice(0,3));
+      }}/>
+    </label>
+    {files.length>0&&<ul className="reg-photo-list">{files.map((file,index)=><li key={`${file.name}-${file.size}-${index}`}><span>{index===0?'Profile':'Extra'} — {file.name}</span><button type="button" className="reg-photo-remove" onClick={()=>onChange(files.filter((_,i)=>i!==index))}>Remove</button></li>)}</ul>}
+    {note&&<p className="subtext">{note}</p>}
+  </div>;
+}
+
+const fieldLabels:Record<string,string>={name:'Full name',phone:'Phone number',gender:'Gender',dob:'Date of birth',city:'City',address:'Address',email:'Email',telegram:'Telegram username',ecName:'Emergency contact name',ecRel:'Emergency contact relationship',ecPhone:'Emergency contact phone',holder:'Account holder name',acct:'CBE account number',telebirr:'Telebirr number',idType:'ID type',idNo:'ID / passport number',idPhoto:'ID photo',photo1:'Profile photo',photo2:'Additional photo',photo3:'Additional photo',confirmAccuracy:'Accuracy confirmation'};
+const fieldStep:(field:string)=>string=(field)=>{
+  if(['name','phone','gender','dob','city','address','email','telegram'].includes(field))return 'About you';
+  if(['ecName','ecRel','ecPhone'].includes(field))return 'Emergency';
+  if(['edu','inst','field','occ','employer','empStatus'].includes(field))return 'Background';
+  if(field.startsWith('photo')||['tshirt','shirt','trouser','shoe'].includes(field))return 'Photos & sizes';
+  if(['bank','holder','acct','telebirr','idType','idNo','idPhoto'].includes(field))return 'Private details';
+  return 'Confirm';
+};
+function fieldMessage(field:HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement){
+  const label=fieldLabels[field.name]||field.name||'This field';
+  if(field.validity.valueMissing)return `${label} is required to continue.`;
+  if(field.validity.typeMismatch)return field.type==='email'?`Enter a valid email address.`:`Enter a valid ${label.toLowerCase()}.`;
+  if(field.validity.patternMismatch&&field.name==='acct')return 'CBE account numbers must start with 1000 and contain digits only.';
+  if(field.validity.patternMismatch)return `${label} is not in the correct format.`;
+  if(field.name==='dob'&&(field.validity.rangeOverflow||field.validity.rangeUnderflow))return 'Ushers must be 18 or older.';
+  if(field.validity.rangeOverflow||field.validity.rangeUnderflow)return `${label} is out of range.`;
+  if(field.validity.tooShort)return `${label} is too short.`;
+  if(field.validity.tooLong)return `${label} is too long.`;
+  if(field.validity.badInput)return `Enter a valid value for ${label.toLowerCase()}.`;
+  return field.validationMessage||`Please check ${label.toLowerCase()}.`;
+}
 
 export function RegistrationPage({token}:{token:string}){
   const formRef=useRef<HTMLFormElement>(null);
-  const [done,setDone]=useState(false);const [step,setStep]=useState(0);const [exp,setExp]=useState(1);const [error,setError]=useState('');const [submitting,setSubmitting]=useState(false);
+  const errorRef=useRef<HTMLParagraphElement>(null);
+  const [done,setDone]=useState(false);const [step,setStep]=useState(0);const [exp,setExp]=useState(1);const [photos,setPhotos]=useState<File[]>([]);const [idPhoto,setIdPhoto]=useState<File|null>(null);const [error,setError]=useState('');const [submitting,setSubmitting]=useState(false);
   const steps:[string,ReactNode][]=[
-    ['About you',<Section title="About you"><F label="Full name" name="name" required/><F label="Phone number" name="phone" type="tel" required/><F label="Gender" name="gender" required options={['Female','Male']}/><F label="Date of birth" name="dob" type="date" required/><F label="City" name="city" required options={['Addis Ababa','Adama','Bahir Dar','Hawassa','Mekelle','Dire Dawa','Other']}/><F label="Address" name="address" required full/><AddMore label="email & Telegram"><F label="Email" name="email" type="email"/><F label="Telegram username" name="telegram"/></AddMore></Section>],
+    ['About you',<Section title="About you"><F label="Full name" name="name" required/><F label="Phone number" name="phone" type="tel" required/><F label="Gender" name="gender" required options={['Female','Male']}/><F label="Date of birth" name="dob" type="date" required max={adultDobMax()} title="You must be 18 or older"/><p className="full subtext">Ushers must be 18 or older.</p><F label="City" name="city" required options={['Addis Ababa','Adama','Bahir Dar','Hawassa','Mekelle','Dire Dawa','Other']}/><F label="Address" name="address" required full/><AddMore label="email & Telegram"><F label="Email" name="email" type="email"/><F label="Telegram username" name="telegram"/></AddMore></Section>],
     ['Emergency',<Section title="Emergency contact"><F label="Contact name" name="ecName" required full/><F label="Relationship" name="ecRel" required/><F label="Phone number" name="ecPhone" type="tel" required/></Section>],
     ['Background',<><Section title="Education"><F label="Highest education level" name="edu" options={['High school','Diploma','Bachelor’s degree','Master’s degree','Other']}/><F label="Institution" name="inst"/><F label="Field of study" name="field" full/></Section><Section title="Employment"><F label="Current occupation" name="occ"/><F label="Employer / company" name="employer"/><F label="Employment status" name="empStatus" full options={['Student','Employed','Self-employed','Unemployed','Freelancer']}/></Section></>],
     ['Languages & skills',<><Section title="Languages"><Checks label="Languages you speak" name="languages" items={['Amharic','English','Afaan Oromo','Tigrinya','Somali','Arabic','Other']}/><F label="Other languages" name="otherLang" full/></Section><Section title="Skills & preferred events"><Checks label="Skills" name="skills" items={['Registration','Guest Relations','VIP Handling','Crowd Management','Hospitality','Brand Ambassador','Ticketing','Check-in','Event Protocol','Public Speaking','Customer Service','Team Leader','Supervisor','Technical Support']}/><Checks label="Preferred event types" name="prefs" items={['Corporate','Conference','Exhibition','Concert','Festival','Product Launch','Brand Activation','Wedding','VIP','Government','Sports','Retail/BTL']}/><F label="General availability" name="availability" full options={['Weekdays','Weekends','Weekdays & weekends','Evenings only']}/></Section></>],
     ['Experience',<Section title="Event experience"><F label="Years of event experience" name="years" type="number"/><F label="Number of events worked" name="events" type="number"/>
       {Array.from({length:exp}).map((_,i)=><div key={i} className="full sub-entry"><strong>Experience {i+1}</strong><div className="form-grid"><F label="Event name" name={`exEvent${i}`}/><F label="Client" name={`exClient${i}`}/><F label="Role performed" name={`exRole${i}`}/><F label="Event type" name={`exType${i}`} options={['Corporate Event','Conference','Exhibition','Concert','Wedding','Product Launch','Brand Activation','VIP Event']}/></div></div>)}
       <div className="full"><Button type="button" variant="outline" size="sm" onClick={()=>setExp(n=>n+1)}>+ Add experience</Button></div></Section>],
-    ['Photos & sizes',<><Section title="Photos"><p className="full subtext">A clear profile photo helps the team recognise you on event day.</p><F label="Profile photo" name="photo1" type="file" required full/><AddMore label="extra photos"><F label="Additional photo" name="photo2" type="file" full/><F label="Additional photo" name="photo3" type="file" full/></AddMore></Section><Section title="Clothing sizes"><F label="T-shirt size" name="tshirt" options={['XS','S','M','L','XL','XXL']}/><F label="Shirt size" name="shirt" options={['XS','S','M','L','XL','XXL']}/><F label="Trouser size" name="trouser"/><F label="Shoe size" name="shoe"/></Section></>],
-    ['Private details',<><Section title="Payment details (private)"><p className="full subtext">Only Validity administrators can see this. It is never shared with clients.</p><F label="Preferred payment method" name="pay" options={['Bank transfer','Telebirr']} full/><F label="Bank name" name="bank"/><F label="Account holder name" name="holder"/><F label="Account number" name="acct"/><F label="Telebirr number" name="telebirr" type="tel"/></Section><Section title="Identification (private)"><p className="full subtext">Kept private and used only to verify your profile.</p><F label="ID type" name="idType" options={['Kebele ID','National ID (Fayda)','Passport','Driver’s licence']} full/><F label="ID / passport number" name="idNo" full/></Section></>],
-    ['Confirm',<div className="reg-confirm"><p>You’re almost done. Confirm your details are accurate, then submit.</p><label className="check-item"><input type="checkbox" required/>I confirm the information above is accurate.</label><AddMore label="social links"><F label="Instagram" name="ig"/><F label="Facebook" name="fb"/><F label="LinkedIn" name="li"/><F label="TikTok" name="tt"/></AddMore></div>],
+    ['Photos & sizes',<><Section title="Photos"><p className="full subtext">Choose up to 3 photos from your gallery. The first image is used as your profile photo.</p><PhotoPicker files={photos} onChange={setPhotos} required/></Section><Section title="Clothing sizes"><F label="T-shirt size" name="tshirt" options={['XS','S','M','L','XL','XXL']}/><F label="Shirt size" name="shirt" options={['XS','S','M','L','XL','XXL']}/><F label="Trouser size" name="trouser"/><F label="Shoe size" name="shoe"/></Section></>],
+    ['Private details',<><Section title="Payment details (private)"><p className="full subtext">Only Validity administrators can see this. It is never shared with clients.</p><div className="full"><small className="text-muted-foreground">Bank</small><strong>CBE</strong><input type="hidden" name="bank" value="CBE"/></div><F label="Account holder name" name="holder" required full/><F label="CBE account number" name="acct" required full placeholder="1000…" pattern="1000[0-9]+" inputMode="numeric" title="Must start with 1000 and contain digits only"/><p className="full subtext">CBE account numbers start with 1000.</p><F label="Telebirr number (optional)" name="telebirr" type="tel" full placeholder="Usually your phone number"/><p className="full subtext">Optional — add a Telebirr number if you also want to be paid that way.</p></Section><Section title="Identification (private)"><p className="full subtext">Kept private and used only to verify your profile. Clients never see this.</p><F label="ID type" name="idType" required options={['Kebele ID','National ID (Fayda)','Passport','Driver’s licence']} full/><F label="ID / passport number" name="idNo" full/><div className="full reg-photos"><label>ID photo<span className="text-primary"> *</span><span className="subtext"> — clear photo of your ID document</span><input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required={!idPhoto} onChange={e=>{const file=e.target.files?.[0]??null;setIdPhoto(file&&file.type.startsWith('image/')?file:null)}}/></label>{idPhoto&&<ul className="reg-photo-list"><li><span>ID — {idPhoto.name}</span><button type="button" className="reg-photo-remove" onClick={()=>setIdPhoto(null)}>Remove</button></li></ul>}</div></Section></>],
+    ['Confirm',<div className="reg-confirm"><p>You’re almost done. Confirm your details are accurate, then submit.</p><label className="check-item"><input type="checkbox" name="confirmAccuracy" required/>I confirm the information above is accurate.</label><AddMore label="social links"><F label="Instagram" name="ig"/><F label="Facebook" name="fb"/><F label="LinkedIn" name="li"/><F label="TikTok" name="tt"/></AddMore></div>],
   ];
-  const showStep=(index:number)=>{setStep(index);setError('');const body=formRef.current?.querySelector('.reg-body');if(body)body.scrollTop=0;};
+  const showError=(message:string)=>{setError(message);requestAnimationFrame(()=>errorRef.current?.scrollIntoView({behavior:'smooth',block:'nearest'}));};
+  const showStep=(index:number,clearError=true)=>{setStep(index);if(clearError)setError('');const body=formRef.current?.querySelector('.reg-body');if(body)body.scrollTop=0;};
   const paneValid=(index:number)=>{
+    if(steps[index]?.[0]==='Photos & sizes'&&photos.length===0){showError('Add at least one profile photo to continue.');return false;}
+    if(steps[index]?.[0]==='Private details'&&!idPhoto){showError('Attach a clear photo of your ID to continue.');return false;}
     const pane=formRef.current?.querySelectorAll<HTMLElement>('[data-step]')[index];
     if(!pane)return true;
     const wasHidden=pane.hidden;
     pane.hidden=false;
     const fields=pane.querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>('input,select,textarea');
-    for(const field of fields){if(!field.reportValidity()){pane.hidden=wasHidden;return false;}}
+    for(const field of fields){
+      if(field.checkValidity())continue;
+      field.reportValidity();
+      showError(field.name==='confirmAccuracy'?'Please confirm your details are accurate to submit.':fieldMessage(field));
+      try{field.focus({preventScroll:false});}catch{/* ignore */}
+      pane.hidden=wasHidden;
+      return false;
+    }
     pane.hidden=wasHidden;
+    setError('');
     return true;
   };
+  const submitRegistration=async(form:HTMLFormElement)=>{
+    if(photos.length===0){showError('Add at least one profile photo to continue.');showStep(steps.findIndex(([title])=>title==='Photos & sizes'),false);return;}
+    if(!idPhoto){showError('Attach a clear photo of your ID to continue.');showStep(steps.findIndex(([title])=>title==='Private details'),false);return;}
+    setError('');setSubmitting(true);
+    const body=new FormData(form);
+    body.delete('confirmAccuracy');
+    (['photo1','photo2','photo3','idPhoto'] as const).forEach(key=>body.delete(key));
+    photos.slice(0,3).forEach((file,index)=>body.append(`photo${index+1}`,file));
+    body.append('idPhoto',idPhoto);
+    try{
+      await api(`/api/public/register/${token}`,{method:'POST',body});
+      setDone(true);window.scrollTo(0,0);
+    }catch(err){
+      if(err instanceof ApiError){
+        const field=err.firstField();
+        const detail=err.firstError();
+        showError(detail||err.message||'Registration could not be submitted. Please check your details and try again.');
+        if(field){
+          const target=steps.findIndex(([title])=>title===fieldStep(field));
+          if(target>=0)showStep(target,false);
+        }
+      }else{
+        showError('Something went wrong. Check your connection and try again.');
+      }
+    }finally{
+      setSubmitting(false);
+    }
+  };
   if(done)return <PublicShell variant="reg"><div className="reg-success"><CheckCircle2 className="big-icon"/><h1>Registration received</h1><p className="subtext">Thank you! The Validity team will review your profile and contact you once it’s verified.</p></div></PublicShell>;
-  return <PublicShell variant="reg"><form ref={formRef} className="reg-form" onSubmit={e=>{e.preventDefault();if(submitting||!paneValid(step))return;setError('');setSubmitting(true);void api(`/api/public/register/${token}`,{method:'POST',body:new FormData(e.currentTarget)}).then(()=>{setDone(true);window.scrollTo(0,0)}).catch(()=>{setError('Check the required fields and profile photo, then try again.');const photo=steps.findIndex(([title])=>title==='Photos & sizes');if(photo>=0)showStep(photo);}).finally(()=>setSubmitting(false))}}>
+  return <PublicShell variant="reg"><form ref={formRef} className="reg-form" onSubmit={e=>{e.preventDefault();if(submitting||!paneValid(step))return;void submitRegistration(e.currentTarget);}}>
     <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Join the usher community</p><div className="reg-progress"><span>Step {step+1} of {steps.length}</span><strong>{steps[step][0]}</strong><div className="reg-bar" aria-hidden="true"><span style={{width:`${((step+1)/steps.length)*100}%`}}/></div></div></div>
-    {error&&<p role="alert" className="reg-error">{error}</p>}
+    {error&&<p ref={errorRef} role="alert" aria-live="assertive" className="reg-error">{error}</p>}
     <div className="reg-body">{steps.map(([title,node],index)=><div key={title} data-step className={index===step?'reg-step active':''} hidden={index!==step}>{node}</div>)}</div>
     <div className="reg-nav">{step>0&&<Button type="button" variant="outline" onClick={()=>showStep(step-1)}>Back</Button>}{step<steps.length-1?<Button type="button" onClick={()=>{if(paneValid(step))showStep(step+1);}}>Continue</Button>:<Button type="submit" size="lg" pending={submitting}>Submit registration</Button>}</div>
   </form></PublicShell>;

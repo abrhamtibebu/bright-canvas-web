@@ -146,7 +146,7 @@ progress {appearance:none; border:0; background:var(--muted); border-radius:4px;
 .reg-nav{display:flex;gap:10px;padding:12px 18px calc(12px + env(safe-area-inset-bottom));flex-shrink:0;border-top:1px solid var(--border);background:var(--card);}
 .reg-nav button{flex:1;min-height:48px;}
 .reg-confirm{display:grid;gap:16px;padding:12px 0;}
-.reg-error{color:var(--warning);margin:0 18px 8px;font-size:13px;}
+.reg-error{color:var(--warning);margin:0 18px 10px;padding:10px 12px;font-size:13px;font-weight:600;line-height:1.4;border:1px solid color-mix(in oklch, var(--warning) 35%, var(--border));border-radius:10px;background:color-mix(in oklch, var(--warning) 12%, var(--card));}
 .reg-add-more{display:grid;gap:10px;margin-top:4px;}
 .reg-add-more-toggle{justify-self:start;border:0;background:transparent;color:var(--primary);font-weight:700;font-size:13px;padding:8px 0;cursor:pointer;}
 .reg-add-more-body{padding-top:4px;}
@@ -187,3 +187,7 @@ progress {appearance:none; border:0; background:var(--muted); border-radius:4px;
   .client-portal{padding-bottom:24px;}
 }
 .photo-tile small {font-size:11px;font-weight:500;opacity:.8;}
+.reg-photos{display:grid;gap:10px;}
+.reg-photo-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+.reg-photo-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--background);font-size:13px;}
+.reg-photo-remove{border:0;background:transparent;color:var(--warning);font-weight:700;font-size:12px;cursor:pointer;padding:4px 0;}

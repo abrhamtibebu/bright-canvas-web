@@ -94,6 +94,7 @@ function Profile({usher,open,onClose}:{usher:Usher;open:boolean;onClose:()=>void
       <div><small>ID type</small>{blank(person.idType)}</div>
       <div><small>ID number</small>{blank(person.idNumber)}</div>
     </div>
+    {person.idPhoto&&<div className="mb-4"><small className="block text-muted-foreground mb-2">ID photo</small><UsherPhotos usher={{...person,photos:[person.idPhoto]}} onRemove={setPhotoPath}/></div>}
     <h3 className="mb-1">Social</h3>
     <div className="profile-detail">
       <div><small>Instagram</small>{blank(person.instagram)}</div>

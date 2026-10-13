@@ -15,11 +15,13 @@ class PublicRegistrationController extends Controller
     {
         WorkspaceSetting::query()->where('registration_token', $token)->firstOrFail();
 
+        $adultBy = now()->subYears(18)->toDateString();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'min:3', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'gender' => ['required', 'in:Female,Male'],
-            'dob' => ['required', 'date'],
+            'dob' => ['required', 'date', 'before_or_equal:'.$adultBy],
             'city' => ['required', 'string', 'max:100'],
             'address' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -50,17 +52,20 @@ class PublicRegistrationController extends Controller
             'photo1' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'photo2' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'photo3' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
-            'pay' => ['nullable', 'string', 'max:50'],
-            'bank' => ['nullable', 'string', 'max:255'],
-            'holder' => ['nullable', 'string', 'max:255'],
-            'acct' => ['nullable', 'string', 'max:100'],
+            'bank' => ['required', 'in:CBE'],
+            'holder' => ['required', 'string', 'max:255'],
+            'acct' => ['required', 'string', 'max:100', 'regex:/^1000\d+$/'],
             'telebirr' => ['nullable', 'string', 'max:50'],
-            'idType' => ['nullable', 'string', 'max:100'],
+            'idType' => ['required', 'string', 'max:100'],
             'idNo' => ['nullable', 'string', 'max:100'],
+            'idPhoto' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'ig' => ['nullable', 'string', 'max:255'],
             'fb' => ['nullable', 'string', 'max:255'],
             'li' => ['nullable', 'string', 'max:255'],
             'tt' => ['nullable', 'string', 'max:255'],
+        ], [
+            'dob.before_or_equal' => 'Ushers must be 18 or older.',
+            'acct.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
         ]);
 
         $usher = Usher::query()->create([
@@ -92,12 +97,12 @@ class PublicRegistrationController extends Controller
             'shirt_size' => $data['shirt'] ?? null,
             'trouser_size' => $data['trouser'] ?? null,
             'shoe_size' => $data['shoe'] ?? null,
-            'payment_method' => $data['pay'] ?? null,
-            'bank_name' => $data['bank'] ?? null,
-            'account_holder' => $data['holder'] ?? null,
-            'account_number' => $data['acct'] ?? null,
+            'payment_method' => 'CBE',
+            'bank_name' => 'CBE',
+            'account_holder' => $data['holder'],
+            'account_number' => $data['acct'],
             'telebirr_number' => $data['telebirr'] ?? null,
-            'id_type' => $data['idType'] ?? null,
+            'id_type' => $data['idType'],
             'id_number' => $data['idNo'] ?? null,
             'instagram' => $data['ig'] ?? null,
             'facebook' => $data['fb'] ?? null,
@@ -107,7 +112,7 @@ class PublicRegistrationController extends Controller
             'available' => true,
         ]);
 
-        foreach (['photo1' => 'profile', 'photo2' => 'additional', 'photo3' => 'additional'] as $field => $kind) {
+        foreach (['photo1' => 'profile', 'photo2' => 'additional', 'photo3' => 'additional', 'idPhoto' => 'id'] as $field => $kind) {
             if (! $request->hasFile($field)) {
                 continue;
             }

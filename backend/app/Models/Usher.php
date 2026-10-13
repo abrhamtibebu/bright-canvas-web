@@ -56,6 +56,7 @@ class Usher extends Model
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
 
         return $photos
+            ->filter(fn (UsherPhoto $photo) => $photo->kind !== 'id')
             ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
             ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
             ->values()
@@ -63,11 +64,25 @@ class Usher extends Model
             ->all();
     }
 
+    public function idPhotoPath(): ?string
+    {
+        $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
+        $photo = $photos->first(fn (UsherPhoto $item) => $item->kind === 'id');
+        if (! $photo || StoredPhoto::locate($photo->path) === null) {
+            return null;
+        }
+
+        return "/api/ushers/{$this->id}/photos/{$photo->id}";
+    }
+
     public function missingPhotoCount(): int
     {
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
 
-        return $photos->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) === null)->count();
+        return $photos
+            ->filter(fn (UsherPhoto $photo) => $photo->kind !== 'id')
+            ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) === null)
+            ->count();
     }
 
     public function publicPhotoPaths(string $token): array
@@ -75,6 +90,7 @@ class Usher extends Model
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
 
         return $photos
+            ->filter(fn (UsherPhoto $photo) => $photo->kind !== 'id')
             ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
             ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
             ->values()
@@ -133,6 +149,7 @@ class Usher extends Model
             'telebirrNumber' => $this->telebirr_number,
             'idType' => $this->id_type,
             'idNumber' => $this->id_number,
+            'idPhoto' => $this->idPhotoPath(),
             'instagram' => $this->instagram,
             'facebook' => $this->facebook,
             'linkedin' => $this->linkedin,

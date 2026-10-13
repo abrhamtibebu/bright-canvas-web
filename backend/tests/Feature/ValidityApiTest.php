@@ -62,6 +62,54 @@ class ValidityApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_registration_rejects_ushers_under_18(): void
+    {
+        $this->seed();
+        $token = WorkspaceSetting::query()->firstOrFail()->registration_token;
+
+        $this->post('/api/public/register/'.$token, [
+            'name' => 'Young Usher',
+            'phone' => '+251911000099',
+            'gender' => 'Female',
+            'dob' => now()->subYears(17)->toDateString(),
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+            'ecName' => 'Sara Bekele',
+            'ecRel' => 'Sister',
+            'ecPhone' => '+251911000001',
+            'bank' => 'CBE',
+            'holder' => 'Young Usher',
+            'acct' => '1000123456789',
+            'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'idType' => 'National ID (Fayda)',
+            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+        ])->assertStatus(422)->assertJsonValidationErrors(['dob']);
+    }
+
+    public function test_registration_requires_cbe_account_starting_with_1000(): void
+    {
+        $this->seed();
+        $token = WorkspaceSetting::query()->firstOrFail()->registration_token;
+
+        $this->post('/api/public/register/'.$token, [
+            'name' => 'Liya Bekele',
+            'phone' => '+251911000000',
+            'gender' => 'Female',
+            'dob' => '2000-01-01',
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+            'ecName' => 'Sara Bekele',
+            'ecRel' => 'Sister',
+            'ecPhone' => '+251911000001',
+            'bank' => 'CBE',
+            'holder' => 'Liya Bekele',
+            'acct' => '2000123456789',
+            'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'idType' => 'National ID (Fayda)',
+            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+        ])->assertStatus(422)->assertJsonValidationErrors(['acct']);
+    }
+
     public function test_registration_creates_a_pending_usher(): void
     {
         $this->seed();
@@ -79,7 +127,12 @@ class ValidityApiTest extends TestCase
             'ecPhone' => '+251911000001',
             'skills' => ['Registration'],
             'languages' => ['Amharic'],
+            'bank' => 'CBE',
+            'holder' => 'Liya Bekele',
+            'acct' => '1000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'idType' => 'National ID (Fayda)',
+            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
             'exEvent0' => 'Addis Expo',
             'exClient0' => 'Demo client',
             'exRole0' => 'Registration',
@@ -88,10 +141,42 @@ class ValidityApiTest extends TestCase
         $this->assertDatabaseHas('ushers', [
             'name' => 'Liya Bekele',
             'status' => 'Pending',
+            'payment_method' => 'CBE',
+            'bank_name' => 'CBE',
+            'account_number' => '1000123456789',
+            'telebirr_number' => null,
+            'id_type' => 'National ID (Fayda)',
+        ]);
+        $this->assertDatabaseHas('usher_photos', [
+            'usher_id' => Usher::query()->where('name', 'Liya Bekele')->value('id'),
+            'kind' => 'id',
         ]);
         $this->assertDatabaseHas('usher_experiences', [
             'event_name' => 'Addis Expo',
         ]);
+    }
+
+    public function test_registration_requires_an_id_photo(): void
+    {
+        $this->seed();
+        $token = WorkspaceSetting::query()->firstOrFail()->registration_token;
+
+        $this->post('/api/public/register/'.$token, [
+            'name' => 'Liya Bekele',
+            'phone' => '+251911000000',
+            'gender' => 'Female',
+            'dob' => '2000-01-01',
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+            'ecName' => 'Sara Bekele',
+            'ecRel' => 'Sister',
+            'ecPhone' => '+251911000001',
+            'bank' => 'CBE',
+            'holder' => 'Liya Bekele',
+            'acct' => '1000123456789',
+            'idType' => 'National ID (Fayda)',
+            'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+        ])->assertStatus(422)->assertJsonValidationErrors(['idPhoto']);
     }
 
     public function test_admin_can_view_a_registration_photo(): void
@@ -109,7 +194,12 @@ class ValidityApiTest extends TestCase
             'ecName' => 'Sara Bekele',
             'ecRel' => 'Sister',
             'ecPhone' => '+251911000001',
+            'bank' => 'CBE',
+            'holder' => 'Liya Bekele',
+            'acct' => '1000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'idType' => 'National ID (Fayda)',
+            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
         ])->assertCreated();
 
         Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
@@ -165,7 +255,12 @@ class ValidityApiTest extends TestCase
             'ecName' => 'Sara Bekele',
             'ecRel' => 'Sister',
             'ecPhone' => '+251911000001',
+            'bank' => 'CBE',
+            'holder' => 'Liya Bekele',
+            'acct' => '1000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'idType' => 'National ID (Fayda)',
+            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
         ])->assertCreated();
 
         $usher = Usher::query()->where('name', 'Liya Bekele')->firstOrFail();
@@ -291,7 +386,12 @@ class ValidityApiTest extends TestCase
             'ecName' => 'Sara Bekele',
             'ecRel' => 'Sister',
             'ecPhone' => '+251911000098',
+            'bank' => 'CBE',
+            'holder' => 'Delete Me',
+            'acct' => '1000999888777',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'idType' => 'National ID (Fayda)',
+            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
         ])->assertCreated();
 
         $registered = Usher::query()->where('name', 'Delete Me')->firstOrFail();
@@ -334,12 +434,12 @@ class ValidityApiTest extends TestCase
             'availability' => 'Weekends',
             'tshirt' => 'M',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
-            'pay' => 'Bank transfer',
+            'idType' => 'National ID (Fayda)',
+            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
             'bank' => 'CBE',
             'holder' => 'Hana Bekele',
             'acct' => '1000123456789',
             'telebirr' => '+251911222333',
-            'idType' => 'National ID (Fayda)',
             'idNo' => 'ID-9988',
             'exEvent0' => 'Addis Expo',
             'exClient0' => 'Demo client',
@@ -363,8 +463,10 @@ class ValidityApiTest extends TestCase
         $this->assertSame('Sara Bekele', $admin['emergencyContactName']);
         $this->assertSame('1000123456789', $admin['accountNumber']);
         $this->assertSame('ID-9988', $admin['idNumber']);
+        $this->assertNotEmpty($admin['idPhoto']);
         $this->assertSame('Dawit Alemu', $admin['references'][0]['name']);
         $this->assertSame('Addis Expo', $admin['experiences'][0]['event']);
+        $this->get($admin['idPhoto'])->assertOk();
 
         $client = collect($this->getJson('/api/public/client/'.$project->client_token)->assertOk()->json('ushers'))
             ->firstWhere('name', 'Hana Bekele');
@@ -372,9 +474,11 @@ class ValidityApiTest extends TestCase
         $this->assertSame('Host', $client['occupation']);
         $this->assertSame('Weekends', $client['availability']);
         $this->assertSame('M', $client['tshirtSize']);
-        foreach (['phone', 'email', 'address', 'telegram', 'emergencyContactName', 'emergencyContactPhone', 'bankName', 'accountNumber', 'telebirrNumber', 'idNumber', 'references'] as $hidden) {
+        foreach (['phone', 'email', 'address', 'telegram', 'emergencyContactName', 'emergencyContactPhone', 'bankName', 'accountNumber', 'telebirrNumber', 'idNumber', 'idPhoto', 'references'] as $hidden) {
             $this->assertArrayNotHasKey($hidden, $client);
         }
+        $idPhoto = UsherPhoto::query()->where('usher_id', $usher->id)->where('kind', 'id')->firstOrFail();
+        $this->get('/api/public/photos/'.$project->client_token.'/'.$idPhoto->id)->assertNotFound();
     }
 
     public function test_personal_confirmation_link_confirms_only_that_usher(): void

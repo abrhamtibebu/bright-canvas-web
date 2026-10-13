@@ -56,6 +56,7 @@ export type Usher = {
   telebirrNumber?: string | null;
   idType?: string | null;
   idNumber?: string | null;
+  idPhoto?: string | null;
   instagram?: string | null;
   facebook?: string | null;
   linkedin?: string | null;

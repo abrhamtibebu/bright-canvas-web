@@ -1,14 +1,30 @@
 export class ApiError extends Error {
   status: number;
+  errors?: Record<string, string[]>;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, errors?: Record<string, string[]>) {
     super(message);
     this.status = status;
+    this.errors = errors;
+  }
+
+  firstError(): string | undefined {
+    if (!this.errors) return undefined;
+    for (const messages of Object.values(this.errors)) {
+      if (messages?.[0]) return messages[0];
+    }
+    return undefined;
+  }
+
+  firstField(): string | undefined {
+    if (!this.errors) return undefined;
+    return Object.keys(this.errors).find((key) => (this.errors?.[key]?.length ?? 0) > 0);
   }
 }
 
+/** API origin from VITE_API_URL in frontend/.env (required). */
 function apiOrigin(): string {
-  const configured = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "");
+  const configured = String(import.meta.env.VITE_API_URL ?? "").trim().replace(/\/$/, "");
   if (!configured) {
     throw new Error("Set VITE_API_URL in frontend/.env to the Laravel API address.");
   }
@@ -16,7 +32,8 @@ function apiOrigin(): string {
 }
 
 export function apiUrl(path: string): string {
-  return `${apiOrigin()}${path.startsWith("/") ? path : `/${path}`}`;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${apiOrigin()}${normalized}`;
 }
 
 const tokenKey = "validity-token";
@@ -44,9 +61,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(apiUrl(path), { ...init, headers });
   if (response.status === 204) return undefined as T;
 
-  const data = (await response.json().catch(() => ({}))) as { message?: string };
+  const data = (await response.json().catch(() => ({}))) as {
+    message?: string;
+    errors?: Record<string, string[]>;
+  };
   if (!response.ok) {
-    throw new ApiError(response.status, data.message ?? "Request failed");
+    throw new ApiError(response.status, data.message ?? "Request failed", data.errors);
   }
   return data as T;
 }
