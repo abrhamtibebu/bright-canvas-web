@@ -17,6 +17,7 @@ class Usher extends Model
         'tshirt_size', 'shirt_size', 'trouser_size', 'shoe_size',
         'payment_method', 'bank_name', 'account_holder', 'account_number', 'telebirr_number',
         'id_type', 'id_number', 'instagram', 'facebook', 'linkedin', 'tiktok',
+        'profile_edit_token',
     ];
 
     protected function casts(): array
@@ -51,12 +52,22 @@ class Usher extends Model
         return $this->hasMany(Rating::class);
     }
 
+    public static function idPhotoKinds(): array
+    {
+        return ['id', 'id_front', 'id_back'];
+    }
+
+    public static function isIdPhotoKind(?string $kind): bool
+    {
+        return in_array($kind, self::idPhotoKinds(), true);
+    }
+
     public function photoPaths(): array
     {
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
 
         return $photos
-            ->filter(fn (UsherPhoto $photo) => $photo->kind !== 'id')
+            ->filter(fn (UsherPhoto $photo) => ! self::isIdPhotoKind($photo->kind))
             ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
             ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
             ->values()
@@ -64,10 +75,11 @@ class Usher extends Model
             ->all();
     }
 
-    public function idPhotoPath(): ?string
+    public function idPhotoPath(string $side = 'front'): ?string
     {
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
-        $photo = $photos->first(fn (UsherPhoto $item) => $item->kind === 'id');
+        $kinds = $side === 'back' ? ['id_back'] : ['id_front', 'id'];
+        $photo = $photos->first(fn (UsherPhoto $item) => in_array($item->kind, $kinds, true));
         if (! $photo || StoredPhoto::locate($photo->path) === null) {
             return null;
         }
@@ -80,7 +92,7 @@ class Usher extends Model
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
 
         return $photos
-            ->filter(fn (UsherPhoto $photo) => $photo->kind !== 'id')
+            ->filter(fn (UsherPhoto $photo) => ! self::isIdPhotoKind($photo->kind))
             ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) === null)
             ->count();
     }
@@ -90,7 +102,7 @@ class Usher extends Model
         $photos = $this->relationLoaded('photos') ? $this->photos : $this->photos()->get();
 
         return $photos
-            ->filter(fn (UsherPhoto $photo) => $photo->kind !== 'id')
+            ->filter(fn (UsherPhoto $photo) => ! self::isIdPhotoKind($photo->kind))
             ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
             ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
             ->values()
@@ -120,6 +132,8 @@ class Usher extends Model
             'address' => $this->address,
             'gender' => $this->gender ?? '',
             'dateOfBirth' => $this->date_of_birth?->format('M j, Y'),
+            'dob' => $this->date_of_birth?->format('Y-m-d'),
+            'profileEditToken' => $this->profile_edit_token,
             'telegram' => $this->telegram,
             'emergencyContactName' => $this->emergency_contact_name,
             'emergencyContactRelationship' => $this->emergency_contact_relationship,
@@ -149,7 +163,9 @@ class Usher extends Model
             'telebirrNumber' => $this->telebirr_number,
             'idType' => $this->id_type,
             'idNumber' => $this->id_number,
-            'idPhoto' => $this->idPhotoPath(),
+            'idPhoto' => $this->idPhotoPath('front'),
+            'idPhotoFront' => $this->idPhotoPath('front'),
+            'idPhotoBack' => $this->idPhotoPath('back'),
             'instagram' => $this->instagram,
             'facebook' => $this->facebook,
             'linkedin' => $this->linkedin,

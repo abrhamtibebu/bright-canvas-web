@@ -49,16 +49,17 @@ class PublicRegistrationController extends Controller
             'shirt' => ['nullable', 'string', 'max:10'],
             'trouser' => ['nullable', 'string', 'max:20'],
             'shoe' => ['nullable', 'string', 'max:20'],
-            'photo1' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
-            'photo2' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
-            'photo3' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
+            'photo1' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+            'photo2' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+            'photo3' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
             'bank' => ['required', 'in:CBE'],
             'holder' => ['required', 'string', 'max:255'],
             'acct' => ['required', 'string', 'max:100', 'regex:/^1000\d+$/'],
             'telebirr' => ['nullable', 'string', 'max:50'],
             'idType' => ['required', 'string', 'max:100'],
             'idNo' => ['nullable', 'string', 'max:100'],
-            'idPhoto' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
+            'idPhotoFront' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+            'idPhotoBack' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
             'ig' => ['nullable', 'string', 'max:255'],
             'fb' => ['nullable', 'string', 'max:255'],
             'li' => ['nullable', 'string', 'max:255'],
@@ -66,6 +67,13 @@ class PublicRegistrationController extends Controller
         ], [
             'dob.before_or_equal' => 'Ushers must be 18 or older.',
             'acct.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
+            'photo1.max' => 'Each photo must be 2 MB or smaller.',
+            'photo2.max' => 'Each photo must be 2 MB or smaller.',
+            'photo3.max' => 'Each photo must be 2 MB or smaller.',
+            'idPhotoFront.max' => 'The ID front photo must be 2 MB or smaller.',
+            'idPhotoBack.max' => 'The ID back photo must be 2 MB or smaller.',
+            'idPhotoFront.required' => 'Attach a clear photo of the front of your ID.',
+            'idPhotoBack.required' => 'Attach a clear photo of the back of your ID.',
         ]);
 
         $usher = Usher::query()->create([
@@ -112,7 +120,13 @@ class PublicRegistrationController extends Controller
             'available' => true,
         ]);
 
-        foreach (['photo1' => 'profile', 'photo2' => 'additional', 'photo3' => 'additional', 'idPhoto' => 'id'] as $field => $kind) {
+        foreach ([
+            'photo1' => 'profile',
+            'photo2' => 'additional',
+            'photo3' => 'additional',
+            'idPhotoFront' => 'id_front',
+            'idPhotoBack' => 'id_back',
+        ] as $field => $kind) {
             if (! $request->hasFile($field)) {
                 continue;
             }

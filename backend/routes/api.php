@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\PublicProjectController;
 use App\Http\Controllers\Api\PublicRegistrationController;
+use App\Http\Controllers\Api\PublicUsherProfileController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\UsherController;
@@ -46,6 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/public/photos/{token}/{photo}', [PublicProjectController::class, 'photo']);
 Route::post('/public/register/{token}', [PublicRegistrationController::class, 'store']);
+Route::get('/public/profile/{token}', [PublicUsherProfileController::class, 'show']);
+Route::post('/public/profile/{token}', [PublicUsherProfileController::class, 'update']);
+Route::get('/public/profile/{token}/photos/{photo}', [PublicUsherProfileController::class, 'photo']);
 Route::get('/public/availability/{token}', [PublicProjectController::class, 'availability']);
 Route::post('/public/availability/{token}', [PublicProjectController::class, 'respond']);
 Route::get('/public/confirm/{token}', [PublicProjectController::class, 'confirm']);

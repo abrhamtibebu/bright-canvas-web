@@ -143,7 +143,7 @@ class PublicProjectController extends Controller
             ->exists();
 
         abort_unless($confirmed, 404);
-        abort_if($photo->kind === 'id', 404);
+        abort_if(Usher::isIdPhotoKind($photo->kind), 404);
 
         return StoredPhoto::response($photo->path);
     }

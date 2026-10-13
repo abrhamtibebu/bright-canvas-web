@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { authorizedBlob } from "@/lib/api";
+import { apiUrl, authorizedBlob } from "@/lib/api";
 import { initials, type Usher } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 import { useDemo } from "./data";
@@ -102,6 +102,11 @@ function usePhoto(path: string | undefined) {
   const [state, setState] = useState<"loading" | "ready" | "missing">(path ? "loading" : "missing");
   useEffect(() => {
     if (!path) return;
+    if (path.startsWith("/api/public/")) {
+      setSrc(apiUrl(path));
+      setState("ready");
+      return;
+    }
     let active = true;
     let url: string | null = null;
     void authorizedBlob(path).then((next) => {

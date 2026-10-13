@@ -82,7 +82,8 @@ class ValidityApiTest extends TestCase
             'acct' => '1000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
             'idType' => 'National ID (Fayda)',
-            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
         ])->assertStatus(422)->assertJsonValidationErrors(['dob']);
     }
 
@@ -106,7 +107,8 @@ class ValidityApiTest extends TestCase
             'acct' => '2000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
             'idType' => 'National ID (Fayda)',
-            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
         ])->assertStatus(422)->assertJsonValidationErrors(['acct']);
     }
 
@@ -132,7 +134,8 @@ class ValidityApiTest extends TestCase
             'acct' => '1000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
             'idType' => 'National ID (Fayda)',
-            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
             'exEvent0' => 'Addis Expo',
             'exClient0' => 'Demo client',
             'exRole0' => 'Registration',
@@ -147,9 +150,14 @@ class ValidityApiTest extends TestCase
             'telebirr_number' => null,
             'id_type' => 'National ID (Fayda)',
         ]);
+        $usherId = Usher::query()->where('name', 'Liya Bekele')->value('id');
         $this->assertDatabaseHas('usher_photos', [
-            'usher_id' => Usher::query()->where('name', 'Liya Bekele')->value('id'),
-            'kind' => 'id',
+            'usher_id' => $usherId,
+            'kind' => 'id_front',
+        ]);
+        $this->assertDatabaseHas('usher_photos', [
+            'usher_id' => $usherId,
+            'kind' => 'id_back',
         ]);
         $this->assertDatabaseHas('usher_experiences', [
             'event_name' => 'Addis Expo',
@@ -176,7 +184,7 @@ class ValidityApiTest extends TestCase
             'acct' => '1000123456789',
             'idType' => 'National ID (Fayda)',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
-        ])->assertStatus(422)->assertJsonValidationErrors(['idPhoto']);
+        ])->assertStatus(422)->assertJsonValidationErrors(['idPhotoFront', 'idPhotoBack']);
     }
 
     public function test_admin_can_view_a_registration_photo(): void
@@ -199,7 +207,8 @@ class ValidityApiTest extends TestCase
             'acct' => '1000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
             'idType' => 'National ID (Fayda)',
-            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
         ])->assertCreated();
 
         Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
@@ -260,7 +269,8 @@ class ValidityApiTest extends TestCase
             'acct' => '1000123456789',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
             'idType' => 'National ID (Fayda)',
-            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
         ])->assertCreated();
 
         $usher = Usher::query()->where('name', 'Liya Bekele')->firstOrFail();
@@ -391,7 +401,8 @@ class ValidityApiTest extends TestCase
             'acct' => '1000999888777',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
             'idType' => 'National ID (Fayda)',
-            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
         ])->assertCreated();
 
         $registered = Usher::query()->where('name', 'Delete Me')->firstOrFail();
@@ -435,7 +446,8 @@ class ValidityApiTest extends TestCase
             'tshirt' => 'M',
             'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
             'idType' => 'National ID (Fayda)',
-            'idPhoto' => UploadedFile::fake()->create('id.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
             'bank' => 'CBE',
             'holder' => 'Hana Bekele',
             'acct' => '1000123456789',
@@ -463,10 +475,12 @@ class ValidityApiTest extends TestCase
         $this->assertSame('Sara Bekele', $admin['emergencyContactName']);
         $this->assertSame('1000123456789', $admin['accountNumber']);
         $this->assertSame('ID-9988', $admin['idNumber']);
-        $this->assertNotEmpty($admin['idPhoto']);
+        $this->assertNotEmpty($admin['idPhotoFront']);
+        $this->assertNotEmpty($admin['idPhotoBack']);
         $this->assertSame('Dawit Alemu', $admin['references'][0]['name']);
         $this->assertSame('Addis Expo', $admin['experiences'][0]['event']);
-        $this->get($admin['idPhoto'])->assertOk();
+        $this->get($admin['idPhotoFront'])->assertOk();
+        $this->get($admin['idPhotoBack'])->assertOk();
 
         $client = collect($this->getJson('/api/public/client/'.$project->client_token)->assertOk()->json('ushers'))
             ->firstWhere('name', 'Hana Bekele');
@@ -474,11 +488,13 @@ class ValidityApiTest extends TestCase
         $this->assertSame('Host', $client['occupation']);
         $this->assertSame('Weekends', $client['availability']);
         $this->assertSame('M', $client['tshirtSize']);
-        foreach (['phone', 'email', 'address', 'telegram', 'emergencyContactName', 'emergencyContactPhone', 'bankName', 'accountNumber', 'telebirrNumber', 'idNumber', 'idPhoto', 'references'] as $hidden) {
+        foreach (['phone', 'email', 'address', 'telegram', 'emergencyContactName', 'emergencyContactPhone', 'bankName', 'accountNumber', 'telebirrNumber', 'idNumber', 'idPhoto', 'idPhotoFront', 'idPhotoBack', 'references'] as $hidden) {
             $this->assertArrayNotHasKey($hidden, $client);
         }
-        $idPhoto = UsherPhoto::query()->where('usher_id', $usher->id)->where('kind', 'id')->firstOrFail();
-        $this->get('/api/public/photos/'.$project->client_token.'/'.$idPhoto->id)->assertNotFound();
+        $idFront = UsherPhoto::query()->where('usher_id', $usher->id)->where('kind', 'id_front')->firstOrFail();
+        $idBack = UsherPhoto::query()->where('usher_id', $usher->id)->where('kind', 'id_back')->firstOrFail();
+        $this->get('/api/public/photos/'.$project->client_token.'/'.$idFront->id)->assertNotFound();
+        $this->get('/api/public/photos/'.$project->client_token.'/'.$idBack->id)->assertNotFound();
     }
 
     public function test_personal_confirmation_link_confirms_only_that_usher(): void
@@ -600,5 +616,68 @@ class ValidityApiTest extends TestCase
         $this->get('/api/export/projects')->assertUnauthorized();
         $this->getJson('/api/projects/'.$project->id.'/payments')->assertUnauthorized();
         $this->get('/api/projects/'.$project->id.'/payments/export')->assertUnauthorized();
+    }
+
+    public function test_admin_can_request_correction_and_usher_can_update_via_link(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $usher = Usher::query()->firstOrFail();
+        $updated = $this->patchJson('/api/ushers/'.$usher->id, [
+            'status' => 'Correction Required',
+        ])->assertOk()->json();
+
+        $this->assertSame('Correction Required', $updated['status']);
+        $this->assertNotEmpty($updated['profileEditToken']);
+
+        $token = $updated['profileEditToken'];
+        $profile = $this->getJson('/api/public/profile/'.$token)->assertOk()->json();
+        $this->assertSame($usher->name, $profile['name']);
+
+        $this->post('/api/public/profile/'.$token, [
+            'name' => 'Corrected Usher',
+            'phone' => '+251911111111',
+            'gender' => 'Female',
+            'dob' => '1998-05-05',
+            'city' => 'Addis Ababa',
+            'address' => 'Kazanchis',
+            'ecName' => 'Contact',
+            'ecRel' => 'Sister',
+            'ecPhone' => '+251911111112',
+            'bank' => 'CBE',
+            'holder' => 'Corrected Usher',
+            'acct' => '1000987654321',
+            'idType' => 'Passport',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('ushers', [
+            'id' => $usher->id,
+            'name' => 'Corrected Usher',
+            'status' => 'Pending',
+            'account_number' => '1000987654321',
+        ]);
+    }
+
+    public function test_admin_can_edit_usher_details(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $usher = Usher::query()->firstOrFail();
+        $this->patchJson('/api/ushers/'.$usher->id, [
+            'name' => 'Admin Edited',
+            'phone' => '+251900000000',
+            'city' => 'Adama',
+            'accountHolder' => 'Admin Edited',
+            'accountNumber' => '1000111222333',
+        ])->assertOk()->assertJsonPath('name', 'Admin Edited');
+
+        $this->assertDatabaseHas('ushers', [
+            'id' => $usher->id,
+            'name' => 'Admin Edited',
+            'city' => 'Adama',
+            'account_number' => '1000111222333',
+        ]);
     }
 }

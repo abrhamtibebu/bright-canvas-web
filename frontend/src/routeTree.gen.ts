@@ -23,6 +23,7 @@ import { Route as ClientIdRouteImport } from './routes/client.$id'
 import { Route as ConfirmTokenRouteImport } from './routes/confirm.$token'
 import { Route as PaymentsIndexRouteImport } from './routes/payments.index'
 import { Route as PaymentsIdRouteImport } from './routes/payments.$id'
+import { Route as ProfileTokenRouteImport } from './routes/profile.$token'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as RateIdRouteImport } from './routes/rate.$id'
@@ -99,6 +100,11 @@ const PaymentsIdRoute = PaymentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => PaymentsRoute,
 } as any)
+const ProfileTokenRoute = ProfileTokenRouteImport.update({
+  id: '/profile/$token',
+  path: '/profile/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
   '/payments/$id': typeof PaymentsIdRoute
+  '/profile/$token': typeof ProfileTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
   '/payments/$id': typeof PaymentsIdRoute
+  '/profile/$token': typeof ProfileTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
   '/payments/$id': typeof PaymentsIdRoute
+  '/profile/$token': typeof ProfileTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/rate/$id': typeof RateIdRoute
   '/register/$token': typeof RegisterTokenRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/client/$id'
     | '/confirm/$token'
     | '/payments/$id'
+    | '/profile/$token'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/client/$id'
     | '/confirm/$token'
     | '/payments/$id'
+    | '/profile/$token'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/client/$id'
     | '/confirm/$token'
     | '/payments/$id'
+    | '/profile/$token'
     | '/projects/$id'
     | '/rate/$id'
     | '/register/$token'
@@ -264,6 +276,7 @@ export interface RootRouteChildren {
   VerificationRoute: typeof VerificationRoute
   ClientIdRoute: typeof ClientIdRoute
   ConfirmTokenRoute: typeof ConfirmTokenRoute
+  ProfileTokenRoute: typeof ProfileTokenRoute
   RateIdRoute: typeof RateIdRoute
   RegisterTokenRoute: typeof RegisterTokenRoute
   RespondIdRoute: typeof RespondIdRoute
@@ -369,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentsIdRouteImport
       parentRoute: typeof PaymentsRoute
     }
+    '/profile/$token': {
+      id: '/profile/$token'
+      path: '/profile/$token'
+      fullPath: '/profile/$token'
+      preLoaderRoute: typeof ProfileTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/': {
       id: '/projects/'
       path: '/'
@@ -448,6 +468,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerificationRoute: VerificationRoute,
   ClientIdRoute: ClientIdRoute,
   ConfirmTokenRoute: ConfirmTokenRoute,
+  ProfileTokenRoute: ProfileTokenRoute,
   RateIdRoute: RateIdRoute,
   RegisterTokenRoute: RegisterTokenRoute,
   RespondIdRoute: RespondIdRoute,

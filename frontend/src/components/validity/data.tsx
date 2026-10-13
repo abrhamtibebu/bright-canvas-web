@@ -4,7 +4,49 @@ import { useRouterState } from "@tanstack/react-router";
 import { api, logout } from "@/lib/api";
 import type { Admin, Assignment, Project, Reports, Usher, WorkspaceInfo } from "@/lib/demo-data";
 
-const publicPrefixes = ["/register", "/respond", "/confirm", "/client", "/rate", "/login"];
+const publicPrefixes = ["/register", "/respond", "/confirm", "/client", "/rate", "/login", "/profile"];
+
+type UsherUpdateInput = Partial<{
+  status: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  gender: string | null;
+  dob: string | null;
+  city: string | null;
+  address: string | null;
+  telegram: string | null;
+  emergencyContactName: string | null;
+  emergencyContactRelationship: string | null;
+  emergencyContactPhone: string | null;
+  educationLevel: string | null;
+  institution: string | null;
+  fieldOfStudy: string | null;
+  occupation: string | null;
+  employer: string | null;
+  employmentStatus: string | null;
+  experience: number;
+  events: number;
+  availability: string | null;
+  skills: string[];
+  languages: string[];
+  otherLanguages: string | null;
+  preferredEvents: string[];
+  tshirtSize: string | null;
+  shirtSize: string | null;
+  trouserSize: string | null;
+  shoeSize: string | null;
+  accountHolder: string | null;
+  accountNumber: string | null;
+  telebirrNumber: string | null;
+  idType: string | null;
+  idNumber: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  linkedin: string | null;
+  tiktok: string | null;
+  available: boolean;
+}>;
 
 type WorkspaceData = {
   me: Admin | null;
@@ -16,7 +58,8 @@ type WorkspaceData = {
   ready: boolean;
   unauthenticated: boolean;
   approveUsher: (id: number) => Promise<void>;
-  requestCorrection: (id: number) => Promise<void>;
+  requestCorrection: (id: number) => Promise<Usher>;
+  updateUsher: (id: number, input: UsherUpdateInput) => Promise<Usher>;
   addUsher: (input: { name: string; phone: string; city: string }) => Promise<void>;
   addUsherPhoto: (id: number, file: File) => Promise<void>;
   deleteUsherPhoto: (path: string) => Promise<void>;
@@ -117,11 +160,20 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       await refresh();
     },
     requestCorrection: async (id) => {
-      await api(`/api/ushers/${id}`, {
+      const updated = await api<Usher>(`/api/ushers/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ status: "Correction Required" }),
       });
       await refresh();
+      return updated;
+    },
+    updateUsher: async (id, input) => {
+      const updated = await api<Usher>(`/api/ushers/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      });
+      await refresh();
+      return updated;
     },
     addUsher: async (input) => {
       await api("/api/ushers", { method: "POST", body: JSON.stringify(input) });

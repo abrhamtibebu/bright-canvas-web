@@ -23,6 +23,8 @@ export type Usher = {
   address?: string | null;
   gender: string;
   dateOfBirth?: string | null;
+  dob?: string | null;
+  profileEditToken?: string | null;
   telegram?: string | null;
   emergencyContactName?: string | null;
   emergencyContactRelationship?: string | null;
@@ -57,6 +59,8 @@ export type Usher = {
   idType?: string | null;
   idNumber?: string | null;
   idPhoto?: string | null;
+  idPhotoFront?: string | null;
+  idPhotoBack?: string | null;
   instagram?: string | null;
   facebook?: string | null;
   linkedin?: string | null;

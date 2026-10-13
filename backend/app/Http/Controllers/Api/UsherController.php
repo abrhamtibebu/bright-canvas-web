@@ -9,6 +9,7 @@ use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class UsherController extends Controller
@@ -119,11 +120,122 @@ class UsherController extends Controller
 
     public function update(Request $request, Usher $usher): JsonResponse
     {
+        $adultBy = now()->subYears(18)->toDateString();
+
         $data = $request->validate([
-            'status' => ['required', 'in:Active,Correction Required'],
+            'status' => ['sometimes', 'in:Active,Correction Required,Pending'],
+            'name' => ['sometimes', 'string', 'min:3', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'gender' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'dob' => ['sometimes', 'nullable', 'date', 'before_or_equal:'.$adultBy],
+            'city' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'telegram' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergencyContactName' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'emergencyContactRelationship' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergencyContactPhone' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'educationLevel' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'institution' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'fieldOfStudy' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'occupation' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'employer' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'employmentStatus' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'experience' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'events' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'availability' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'skills' => ['sometimes', 'nullable', 'array'],
+            'skills.*' => ['string', 'max:80'],
+            'languages' => ['sometimes', 'nullable', 'array'],
+            'languages.*' => ['string', 'max:50'],
+            'otherLanguages' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'preferredEvents' => ['sometimes', 'nullable', 'array'],
+            'preferredEvents.*' => ['string', 'max:80'],
+            'tshirtSize' => ['sometimes', 'nullable', 'string', 'max:10'],
+            'shirtSize' => ['sometimes', 'nullable', 'string', 'max:10'],
+            'trouserSize' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'shoeSize' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'accountHolder' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'accountNumber' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^1000\d+$/'],
+            'telebirrNumber' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'idType' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'idNumber' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'instagram' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'facebook' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'linkedin' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'tiktok' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'available' => ['sometimes', 'boolean'],
+        ], [
+            'dob.before_or_equal' => 'Ushers must be 18 or older.',
+            'accountNumber.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
         ]);
 
-        $usher->update(['status' => $data['status']]);
+        $updates = [];
+
+        if (array_key_exists('status', $data)) {
+            $updates['status'] = $data['status'];
+            if ($data['status'] === 'Correction Required' && ! $usher->profile_edit_token) {
+                $updates['profile_edit_token'] = Str::random(40);
+            }
+        }
+
+        $map = [
+            'name' => 'name',
+            'phone' => 'phone',
+            'email' => 'email',
+            'gender' => 'gender',
+            'dob' => 'date_of_birth',
+            'city' => 'city',
+            'address' => 'address',
+            'telegram' => 'telegram',
+            'emergencyContactName' => 'emergency_contact_name',
+            'emergencyContactRelationship' => 'emergency_contact_relationship',
+            'emergencyContactPhone' => 'emergency_contact_phone',
+            'educationLevel' => 'education_level',
+            'institution' => 'institution',
+            'fieldOfStudy' => 'field_of_study',
+            'occupation' => 'occupation',
+            'employer' => 'employer',
+            'employmentStatus' => 'employment_status',
+            'experience' => 'years_experience',
+            'events' => 'events_count',
+            'availability' => 'availability_preference',
+            'skills' => 'skills',
+            'languages' => 'languages',
+            'otherLanguages' => 'other_languages',
+            'preferredEvents' => 'preferred_event_types',
+            'tshirtSize' => 'tshirt_size',
+            'shirtSize' => 'shirt_size',
+            'trouserSize' => 'trouser_size',
+            'shoeSize' => 'shoe_size',
+            'accountHolder' => 'account_holder',
+            'accountNumber' => 'account_number',
+            'telebirrNumber' => 'telebirr_number',
+            'idType' => 'id_type',
+            'idNumber' => 'id_number',
+            'instagram' => 'instagram',
+            'facebook' => 'facebook',
+            'linkedin' => 'linkedin',
+            'tiktok' => 'tiktok',
+            'available' => 'available',
+        ];
+
+        foreach ($map as $input => $column) {
+            if (array_key_exists($input, $data)) {
+                $updates[$column] = $data[$input];
+            }
+        }
+
+        if (array_key_exists('account_number', $updates) || array_key_exists('account_holder', $updates)) {
+            $updates['payment_method'] = 'CBE';
+            $updates['bank_name'] = 'CBE';
+        }
+
+        if ($updates !== []) {
+            $usher->update($updates);
+        }
+
+        $usher->load(['photos', 'experiences', 'references']);
 
         return response()->json($usher->present());
     }
