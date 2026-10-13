@@ -165,17 +165,42 @@ class UsherController extends Controller
             'linkedin' => ['sometimes', 'nullable', 'string', 'max:255'],
             'tiktok' => ['sometimes', 'nullable', 'string', 'max:255'],
             'available' => ['sometimes', 'boolean'],
+            'correctionSections' => ['sometimes', 'array', 'min:1'],
+            'correctionSections.*' => ['string', 'in:'.implode(',', Usher::CORRECTION_SECTIONS)],
+            'correctionNote' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ], [
             'dob.before_or_equal' => 'Ushers must be 18 or older.',
             'accountNumber.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
+            'correctionSections.min' => 'Select at least one section for the usher to correct.',
         ]);
 
         $updates = [];
 
         if (array_key_exists('status', $data)) {
             $updates['status'] = $data['status'];
-            if ($data['status'] === 'Correction Required' && ! $usher->profile_edit_token) {
-                $updates['profile_edit_token'] = Str::random(40);
+            if ($data['status'] === 'Correction Required') {
+                if (! $usher->profile_edit_token) {
+                    $updates['profile_edit_token'] = Str::random(40);
+                }
+                if (array_key_exists('correctionSections', $data)) {
+                    $updates['correction_sections'] = array_values(array_unique($data['correctionSections']));
+                } elseif (! $usher->correction_sections) {
+                    $updates['correction_sections'] = Usher::CORRECTION_SECTIONS;
+                }
+                if (array_key_exists('correctionNote', $data)) {
+                    $updates['correction_note'] = $data['correctionNote'];
+                }
+            }
+            if (in_array($data['status'], ['Active', 'Pending'], true)) {
+                $updates['correction_sections'] = null;
+                $updates['correction_note'] = null;
+            }
+        } elseif (array_key_exists('correctionSections', $data) || array_key_exists('correctionNote', $data)) {
+            if (array_key_exists('correctionSections', $data)) {
+                $updates['correction_sections'] = array_values(array_unique($data['correctionSections']));
+            }
+            if (array_key_exists('correctionNote', $data)) {
+                $updates['correction_note'] = $data['correctionNote'];
             }
         }
 

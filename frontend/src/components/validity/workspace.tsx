@@ -63,18 +63,35 @@ function EditUsherDialog({usher,open,onClose}:{usher:Usher;open:boolean;onClose:
     </form>
   </DialogContent></Dialog>;
 }
+const CORRECTION_SECTION_OPTIONS=[{id:'about',label:'About you',hint:'Name, phone, gender, birthday, city, address'},{id:'emergency',label:'Emergency contact',hint:'Contact name, relationship, phone'},{id:'background',label:'Background',hint:'Education and employment'},{id:'skills',label:'Languages & skills',hint:'Languages, skills, availability, experience years'},{id:'photos',label:'Photos & sizes',hint:'Profile photos and clothing sizes'},{id:'payment',label:'Payment & ID',hint:'CBE details and ID front/back photos'},{id:'social',label:'Social links',hint:'Instagram, Facebook, LinkedIn, TikTok'}] as const;
+function RequestCorrectionDialog({usher,open,onClose,onDone}:{usher:Usher;open:boolean;onClose:()=>void;onDone:(updated:Usher)=>void}){
+  const {requestCorrection}=useDemo();
+  const [sections,setSections]=useState<string[]>(CORRECTION_SECTION_OPTIONS.map(s=>s.id));
+  const [note,setNote]=useState('');
+  const [saving,setSaving]=useState(false);
+  const [error,setError]=useState('');
+  useEffect(()=>{if(!open)return;setSections(usher.correctionSections?.length?usher.correctionSections:CORRECTION_SECTION_OPTIONS.map(s=>s.id));setNote(usher.correctionNote??'');setError('');},[open,usher.correctionNote,usher.correctionSections]);
+  const toggle=(id:string)=>setSections(current=>current.includes(id)?current.filter(item=>item!==id):[...current,id]);
+  return <Dialog open={open} onOpenChange={next=>{if(!next)onClose()}}><DialogContent className="max-w-lg"><DialogTitle>Request correction</DialogTitle><DialogDescription>Choose which parts of {usher.name}'s profile they must update. Only those sections appear on their private link.</DialogDescription>
+    <div className="check-grid correction-section-grid">{CORRECTION_SECTION_OPTIONS.map(option=><label key={option.id} className={`check-item correction-section${sections.includes(option.id)?' selected':''}`}><input type="checkbox" checked={sections.includes(option.id)} onChange={()=>toggle(option.id)}/><span><strong>{option.label}</strong><small className="block text-muted-foreground font-normal">{option.hint}</small></span></label>)}</div>
+    <label className="block text-xs font-semibold mt-3">Note for the usher (optional)<textarea className="w-full mt-2" rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="Example: Please re-upload a clearer ID back photo and fix your CBE account number."/></label>
+    {error&&<p className="form-error" role="alert">{error}</p>}
+    <div className="toolbar justify-end mt-3"><Button variant="outline" onClick={onClose}>Cancel</Button><Button pending={saving} onClick={()=>{if(!sections.length){setError('Select at least one section.');return;}setError('');setSaving(true);void requestCorrection(usher.id,sections,note).then(updated=>{onDone(updated);onClose()}).catch((err:Error)=>setError(err.message||'Could not request correction.')).finally(()=>setSaving(false))}}>Create correction link</Button></div>
+  </DialogContent></Dialog>;
+}
 function Profile({usher,open,onClose}:{usher:Usher;open:boolean;onClose:()=>void}){
-  const {approveUsher,requestCorrection,ushers,deleteUsher,deleteUsherPhoto}=useDemo();
+  const {approveUsher,ushers,deleteUsher,deleteUsherPhoto}=useDemo();
   const person=ushers.find(item=>item.id===usher.id)??usher;
   const [confirm,setConfirm]=useState(false);
   const [removing,setRemoving]=useState(false);
   const [photoPath,setPhotoPath]=useState<string|null>(null);
   const [removingPhoto,setRemovingPhoto]=useState(false);
   const [editing,setEditing]=useState(false);
-  const [requesting,setRequesting]=useState(false);
+  const [requestOpen,setRequestOpen]=useState(false);
   const [shareToken,setShareToken]=useState<string|null>(person.profileEditToken??null);
   const languages=joined([...(person.languages??[]), person.otherLanguages]);
   const editToken=shareToken||person.profileEditToken||null;
+  const sectionLabels=(person.correctionSections??[]).map(id=>CORRECTION_SECTION_OPTIONS.find(option=>option.id===id)?.label??id);
   return <><Dialog open={open} onOpenChange={onClose}><DialogContent className="max-w-2xl"><DialogTitle>Usher profile</DialogTitle><DialogDescription>Profile · U-{String(person.id).padStart(3,'0')}</DialogDescription>
     <div className="profile-head"><Avatar usher={person}/><div><h2>{person.name}</h2><div className="subtext">{person.city} · {person.gender}</div><Status value={person.status}/></div></div>
     <UsherPhotos usher={person} onRemove={setPhotoPath}/>{(person.missingPhotos??0)>0&&<div className="attention mb-3">This profile still lists {person.missingPhotos} photo{person.missingPhotos===1?'':'s'}, but the image {person.missingPhotos===1?'file is':'files are'} no longer on the server. Add {person.missingPhotos===1?'it':'them'} again below.</div>}<AddUsherPhoto usherId={person.id}/>
@@ -142,10 +159,11 @@ function Profile({usher,open,onClose}:{usher:Usher;open:boolean;onClose:()=>void
     </div>
     <h3 className="mb-2">References</h3>
     {(person.references??[]).length?(person.references??[]).map(item=><div className="sub-entry mb-2" key={`${item.name}-${item.phone}`}><strong>{blank(item.name)}</strong><div className="subtext">{joined([item.organization, item.relationship])}</div><div>{joined([item.phone, item.email])}</div>{item.notes&&<div className="subtext">{item.notes}</div>}</div>):<p className="subtext mb-3">No references listed.</p>}
-    {editToken&&<div className="attention mb-3"><div><strong className="block mb-1">Correction link ready</strong><span className="subtext">Send this private link so {person.name} can update their details.</span><div className="toolbar mt-2"><ShareLinkButton variant="outline" size="sm" path={`/profile/${editToken}`} label="Share correction link" title={`Profile correction for ${person.name}`} description="Only this usher should receive this link. After they submit, the profile returns to Pending for review." message="Please update your Validity usher profile using this private link:"/></div></div></div>}
-    {confirm?<div className="photo-confirm"><span>Delete {person.name}? Their photos, invitations, and ratings will be removed.</span><Button variant="outline" size="sm" onClick={()=>setConfirm(false)}>Cancel</Button><Button variant="destructive" size="sm" pending={removing} onClick={()=>{setRemoving(true);void deleteUsher(person.id).then(onClose).finally(()=>setRemoving(false))}}>Delete usher</Button></div>:<div className="toolbar justify-end"><Button variant="outline" onClick={()=>setEditing(true)}><Pencil/>Edit details</Button>{(person.status==='Pending'||person.status==='Correction Required'||person.status==='Active')&&<Button variant="outline" pending={requesting} onClick={()=>{setRequesting(true);void requestCorrection(person.id).then(updated=>{setShareToken(updated.profileEditToken??null)}).finally(()=>setRequesting(false))}}>Request correction</Button>}{person.status==='Pending'&&<Button onClick={()=>approveUsher(person.id).then(onClose)}><Check/>Approve profile</Button>}{person.status==='Correction Required'&&<Button onClick={()=>approveUsher(person.id).then(onClose)}><Check/>Approve profile</Button>}<Button variant="destructive" onClick={()=>setConfirm(true)}><Trash2/>Delete usher</Button></div>}
+    {editToken&&<div className="attention mb-3"><div><strong className="block mb-1">Correction link ready</strong><span className="subtext">Send this private link so {person.name} can update their details.{sectionLabels.length>0?` Sections: ${sectionLabels.join(', ')}.`:''}{person.correctionNote?` Note: ${person.correctionNote}`:''}</span><div className="toolbar mt-2"><ShareLinkButton variant="outline" size="sm" path={`/profile/${editToken}`} label="Share correction link" title={`Profile correction for ${person.name}`} description="Only this usher should receive this link. After they submit, the profile returns to Pending for review." message="Please update your Validity usher profile using this private link:"/><Button variant="outline" size="sm" onClick={()=>setRequestOpen(true)}>Change sections</Button></div></div></div>}
+    {confirm?<div className="photo-confirm"><span>Delete {person.name}? Their photos, invitations, and ratings will be removed.</span><Button variant="outline" size="sm" onClick={()=>setConfirm(false)}>Cancel</Button><Button variant="destructive" size="sm" pending={removing} onClick={()=>{setRemoving(true);void deleteUsher(person.id).then(onClose).finally(()=>setRemoving(false))}}>Delete usher</Button></div>:<div className="toolbar justify-end"><Button variant="outline" onClick={()=>setEditing(true)}><Pencil/>Edit details</Button>{(person.status==='Pending'||person.status==='Correction Required'||person.status==='Active')&&<Button variant="outline" onClick={()=>setRequestOpen(true)}>Request correction</Button>}{person.status==='Pending'&&<Button onClick={()=>approveUsher(person.id).then(onClose)}><Check/>Approve profile</Button>}{person.status==='Correction Required'&&<Button onClick={()=>approveUsher(person.id).then(onClose)}><Check/>Approve profile</Button>}<Button variant="destructive" onClick={()=>setConfirm(true)}><Trash2/>Delete usher</Button></div>}
   </DialogContent></Dialog>
   <EditUsherDialog usher={person} open={editing} onClose={()=>setEditing(false)}/>
+  <RequestCorrectionDialog usher={person} open={requestOpen} onClose={()=>setRequestOpen(false)} onDone={updated=>setShareToken(updated.profileEditToken??null)}/>
   </>;
 }
 

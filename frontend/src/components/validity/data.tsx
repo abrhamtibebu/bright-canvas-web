@@ -58,7 +58,7 @@ type WorkspaceData = {
   ready: boolean;
   unauthenticated: boolean;
   approveUsher: (id: number) => Promise<void>;
-  requestCorrection: (id: number) => Promise<Usher>;
+  requestCorrection: (id: number, sections: string[], note?: string) => Promise<Usher>;
   updateUsher: (id: number, input: UsherUpdateInput) => Promise<Usher>;
   addUsher: (input: { name: string; phone: string; city: string }) => Promise<void>;
   addUsherPhoto: (id: number, file: File) => Promise<void>;
@@ -159,10 +159,14 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       await api(`/api/ushers/${id}`, { method: "PATCH", body: JSON.stringify({ status: "Active" }) });
       await refresh();
     },
-    requestCorrection: async (id) => {
+    requestCorrection: async (id, sections, note) => {
       const updated = await api<Usher>(`/api/ushers/${id}`, {
         method: "PATCH",
-        body: JSON.stringify({ status: "Correction Required" }),
+        body: JSON.stringify({
+          status: "Correction Required",
+          correctionSections: sections,
+          correctionNote: note?.trim() || null,
+        }),
       });
       await refresh();
       return updated;

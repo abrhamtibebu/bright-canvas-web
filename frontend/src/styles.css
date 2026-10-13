@@ -141,9 +141,9 @@ progress {appearance:none; border:0; background:var(--muted); border-radius:4px;
 .btn-spin {animation:btn-spin .7s linear infinite;}
 .photo-open {display:block;padding:0;border:0;background:transparent;cursor:zoom-in;border-radius:12px;}
 .photo-tile {width:120px;height:160px;border-radius:12px;object-fit:cover;background:var(--muted);display:block;}
-.photo-lightbox {position:fixed;inset:0;z-index:80;display:grid;place-items:center;gap:12px;padding:24px;background:color-mix(in oklch, var(--foreground) 62%, transparent);}
-.photo-lightbox img {max-width:min(640px,100%);max-height:min(78dvh,720px);object-fit:contain;border-radius:12px;background:var(--card);}
-.photo-lightbox-close {position:absolute;top:16px;right:16px;border:0;border-radius:6px;background:var(--card);color:var(--foreground);padding:8px 12px;cursor:pointer;}
+.photo-lightbox {position:fixed;inset:0;z-index:200;display:grid;place-items:center;gap:12px;padding:24px;margin:0;background:color-mix(in oklch, var(--foreground) 72%, transparent);overscroll-behavior:contain;}
+.photo-lightbox img {max-width:min(92vw,960px);max-height:min(86dvh,860px);width:auto;height:auto;object-fit:contain;border-radius:12px;background:var(--card);box-shadow:0 20px 50px color-mix(in oklch, var(--foreground) 35%, transparent);}
+.photo-lightbox-close {position:fixed;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:201;border:0;border-radius:6px;background:var(--card);color:var(--foreground);padding:8px 12px;cursor:pointer;font-weight:600;}
 .photo-upload {margin:4px 0 12px;font-size:12px;font-weight:600;}
 .photo-upload label {display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
 .photo-upload input {font-size:12px;max-width:100%;}
@@ -222,3 +222,7 @@ progress {appearance:none; border:0; background:var(--muted); border-radius:4px;
 .profile-edit-form .reg-body{padding-bottom:24px;}
 .profile-edit-form .reg-nav{justify-content:stretch;}
 .profile-edit-form .reg-nav .button,.profile-edit-form .reg-nav button{width:100%;}
+.correction-section-grid{display:grid;gap:8px;grid-template-columns:1fr;}
+.correction-section{align-items:flex-start!important;width:100%;}
+.correction-section.selected{border-color:var(--primary);background:color-mix(in oklch, var(--primary) 8%, var(--card));}
+.correction-note{margin:0 18px 10px;padding:10px 12px;border-radius:10px;border:1px solid color-mix(in oklch, var(--primary) 30%, var(--border));background:color-mix(in oklch, var(--primary) 8%, var(--card));font-size:13px;}

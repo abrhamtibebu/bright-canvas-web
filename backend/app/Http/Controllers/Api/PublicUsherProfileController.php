@@ -23,56 +23,88 @@ class PublicUsherProfileController extends Controller
     public function update(Request $request, string $token): JsonResponse
     {
         $usher = $this->findByToken($token);
+        $sections = $usher->correctionSections();
         $adultBy = now()->subYears(18)->toDateString();
+        $hasFront = $usher->idPhotoPath('front') !== null;
+        $hasBack = $usher->idPhotoPath('back') !== null;
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'min:3', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
-            'gender' => ['required', 'in:Female,Male'],
-            'dob' => ['required', 'date', 'before_or_equal:'.$adultBy],
-            'city' => ['required', 'string', 'max:100'],
-            'address' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'telegram' => ['nullable', 'string', 'max:100'],
-            'ecName' => ['required', 'string', 'max:255'],
-            'ecRel' => ['required', 'string', 'max:100'],
-            'ecPhone' => ['required', 'string', 'max:50'],
-            'edu' => ['nullable', 'string', 'max:100'],
-            'inst' => ['nullable', 'string', 'max:255'],
-            'field' => ['nullable', 'string', 'max:255'],
-            'occ' => ['nullable', 'string', 'max:255'],
-            'employer' => ['nullable', 'string', 'max:255'],
-            'empStatus' => ['nullable', 'string', 'max:100'],
-            'languages' => ['nullable', 'array'],
-            'languages.*' => ['string', 'max:50'],
-            'otherLang' => ['nullable', 'string', 'max:255'],
-            'years' => ['nullable', 'integer', 'min:0'],
-            'events' => ['nullable', 'integer', 'min:0'],
-            'skills' => ['nullable', 'array'],
-            'skills.*' => ['string', 'max:80'],
-            'prefs' => ['nullable', 'array'],
-            'prefs.*' => ['string', 'max:80'],
-            'availability' => ['nullable', 'string', 'max:100'],
-            'tshirt' => ['nullable', 'string', 'max:10'],
-            'shirt' => ['nullable', 'string', 'max:10'],
-            'trouser' => ['nullable', 'string', 'max:20'],
-            'shoe' => ['nullable', 'string', 'max:20'],
-            'photo1' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
-            'photo2' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
-            'photo3' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
-            'bank' => ['required', 'in:CBE'],
-            'holder' => ['required', 'string', 'max:255'],
-            'acct' => ['required', 'string', 'max:100', 'regex:/^1000\d+$/'],
-            'telebirr' => ['nullable', 'string', 'max:50'],
-            'idType' => ['required', 'string', 'max:100'],
-            'idNo' => ['nullable', 'string', 'max:100'],
-            'idPhotoFront' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
-            'idPhotoBack' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
-            'ig' => ['nullable', 'string', 'max:255'],
-            'fb' => ['nullable', 'string', 'max:255'],
-            'li' => ['nullable', 'string', 'max:255'],
-            'tt' => ['nullable', 'string', 'max:255'],
-        ], [
+        $rules = [];
+        if (in_array('about', $sections, true)) {
+            $rules = array_merge($rules, [
+                'name' => ['required', 'string', 'min:3', 'max:255'],
+                'phone' => ['required', 'string', 'max:50'],
+                'gender' => ['required', 'in:Female,Male'],
+                'dob' => ['required', 'date', 'before_or_equal:'.$adultBy],
+                'city' => ['required', 'string', 'max:100'],
+                'address' => ['required', 'string', 'max:255'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'telegram' => ['nullable', 'string', 'max:100'],
+            ]);
+        }
+        if (in_array('emergency', $sections, true)) {
+            $rules = array_merge($rules, [
+                'ecName' => ['required', 'string', 'max:255'],
+                'ecRel' => ['required', 'string', 'max:100'],
+                'ecPhone' => ['required', 'string', 'max:50'],
+            ]);
+        }
+        if (in_array('background', $sections, true)) {
+            $rules = array_merge($rules, [
+                'edu' => ['nullable', 'string', 'max:100'],
+                'inst' => ['nullable', 'string', 'max:255'],
+                'field' => ['nullable', 'string', 'max:255'],
+                'occ' => ['nullable', 'string', 'max:255'],
+                'employer' => ['nullable', 'string', 'max:255'],
+                'empStatus' => ['nullable', 'string', 'max:100'],
+            ]);
+        }
+        if (in_array('skills', $sections, true)) {
+            $rules = array_merge($rules, [
+                'languages' => ['nullable', 'array'],
+                'languages.*' => ['string', 'max:50'],
+                'otherLang' => ['nullable', 'string', 'max:255'],
+                'years' => ['nullable', 'integer', 'min:0'],
+                'events' => ['nullable', 'integer', 'min:0'],
+                'skills' => ['nullable', 'array'],
+                'skills.*' => ['string', 'max:80'],
+                'prefs' => ['nullable', 'array'],
+                'prefs.*' => ['string', 'max:80'],
+                'availability' => ['nullable', 'string', 'max:100'],
+            ]);
+        }
+        if (in_array('photos', $sections, true)) {
+            $rules = array_merge($rules, [
+                'tshirt' => ['nullable', 'string', 'max:10'],
+                'shirt' => ['nullable', 'string', 'max:10'],
+                'trouser' => ['nullable', 'string', 'max:20'],
+                'shoe' => ['nullable', 'string', 'max:20'],
+                'photo1' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+                'photo2' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+                'photo3' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+            ]);
+        }
+        if (in_array('payment', $sections, true)) {
+            $rules = array_merge($rules, [
+                'bank' => ['required', 'in:CBE'],
+                'holder' => ['required', 'string', 'max:255'],
+                'acct' => ['required', 'string', 'max:100', 'regex:/^1000\d+$/'],
+                'telebirr' => ['nullable', 'string', 'max:50'],
+                'idType' => ['required', 'string', 'max:100'],
+                'idNo' => ['nullable', 'string', 'max:100'],
+                'idPhotoFront' => [$hasFront ? 'nullable' : 'required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+                'idPhotoBack' => [$hasBack ? 'nullable' : 'required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
+            ]);
+        }
+        if (in_array('social', $sections, true)) {
+            $rules = array_merge($rules, [
+                'ig' => ['nullable', 'string', 'max:255'],
+                'fb' => ['nullable', 'string', 'max:255'],
+                'li' => ['nullable', 'string', 'max:255'],
+                'tt' => ['nullable', 'string', 'max:255'],
+            ]);
+        }
+
+        $data = $request->validate($rules, [
             'dob.before_or_equal' => 'Ushers must be 18 or older.',
             'acct.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
             'photo1.max' => 'Each photo must be 2 MB or smaller.',
@@ -80,78 +112,117 @@ class PublicUsherProfileController extends Controller
             'photo3.max' => 'Each photo must be 2 MB or smaller.',
             'idPhotoFront.max' => 'The ID front photo must be 2 MB or smaller.',
             'idPhotoBack.max' => 'The ID back photo must be 2 MB or smaller.',
+            'idPhotoFront.required' => 'Attach a clear photo of the front of your ID.',
+            'idPhotoBack.required' => 'Attach a clear photo of the back of your ID.',
         ]);
 
-        $usher->update([
-            'name' => $data['name'],
-            'phone' => $data['phone'],
-            'email' => $data['email'] ?? null,
-            'gender' => $data['gender'],
-            'date_of_birth' => $data['dob'],
-            'city' => $data['city'],
-            'address' => $data['address'],
-            'telegram' => $data['telegram'] ?? null,
-            'emergency_contact_name' => $data['ecName'],
-            'emergency_contact_relationship' => $data['ecRel'],
-            'emergency_contact_phone' => $data['ecPhone'],
-            'education_level' => $data['edu'] ?? null,
-            'institution' => $data['inst'] ?? null,
-            'field_of_study' => $data['field'] ?? null,
-            'occupation' => $data['occ'] ?? null,
-            'employer' => $data['employer'] ?? null,
-            'employment_status' => $data['empStatus'] ?? null,
-            'years_experience' => $data['years'] ?? 0,
-            'events_count' => $data['events'] ?? 0,
-            'skills' => $data['skills'] ?? [],
-            'languages' => $data['languages'] ?? [],
-            'preferred_event_types' => $data['prefs'] ?? [],
-            'other_languages' => $data['otherLang'] ?? null,
-            'availability_preference' => $data['availability'] ?? null,
-            'tshirt_size' => $data['tshirt'] ?? null,
-            'shirt_size' => $data['shirt'] ?? null,
-            'trouser_size' => $data['trouser'] ?? null,
-            'shoe_size' => $data['shoe'] ?? null,
-            'payment_method' => 'CBE',
-            'bank_name' => 'CBE',
-            'account_holder' => $data['holder'],
-            'account_number' => $data['acct'],
-            'telebirr_number' => $data['telebirr'] ?? null,
-            'id_type' => $data['idType'],
-            'id_number' => $data['idNo'] ?? null,
-            'instagram' => $data['ig'] ?? null,
-            'facebook' => $data['fb'] ?? null,
-            'linkedin' => $data['li'] ?? null,
-            'tiktok' => $data['tt'] ?? null,
+        $updates = [
             'status' => 'Pending',
-        ]);
+            'correction_sections' => null,
+            'correction_note' => null,
+        ];
 
-        foreach (['photo1' => 'profile', 'photo2' => 'additional', 'photo3' => 'additional'] as $field => $kind) {
-            if (! $request->hasFile($field)) {
-                continue;
+        if (in_array('about', $sections, true)) {
+            $updates = array_merge($updates, [
+                'name' => $data['name'],
+                'phone' => $data['phone'],
+                'email' => $data['email'] ?? null,
+                'gender' => $data['gender'],
+                'date_of_birth' => $data['dob'],
+                'city' => $data['city'],
+                'address' => $data['address'],
+                'telegram' => $data['telegram'] ?? null,
+            ]);
+        }
+        if (in_array('emergency', $sections, true)) {
+            $updates = array_merge($updates, [
+                'emergency_contact_name' => $data['ecName'],
+                'emergency_contact_relationship' => $data['ecRel'],
+                'emergency_contact_phone' => $data['ecPhone'],
+            ]);
+        }
+        if (in_array('background', $sections, true)) {
+            $updates = array_merge($updates, [
+                'education_level' => $data['edu'] ?? null,
+                'institution' => $data['inst'] ?? null,
+                'field_of_study' => $data['field'] ?? null,
+                'occupation' => $data['occ'] ?? null,
+                'employer' => $data['employer'] ?? null,
+                'employment_status' => $data['empStatus'] ?? null,
+            ]);
+        }
+        if (in_array('skills', $sections, true)) {
+            $updates = array_merge($updates, [
+                'years_experience' => $data['years'] ?? 0,
+                'events_count' => $data['events'] ?? 0,
+                'skills' => $data['skills'] ?? [],
+                'languages' => $data['languages'] ?? [],
+                'preferred_event_types' => $data['prefs'] ?? [],
+                'other_languages' => $data['otherLang'] ?? null,
+                'availability_preference' => $data['availability'] ?? null,
+            ]);
+        }
+        if (in_array('photos', $sections, true)) {
+            $updates = array_merge($updates, [
+                'tshirt_size' => $data['tshirt'] ?? null,
+                'shirt_size' => $data['shirt'] ?? null,
+                'trouser_size' => $data['trouser'] ?? null,
+                'shoe_size' => $data['shoe'] ?? null,
+            ]);
+        }
+        if (in_array('payment', $sections, true)) {
+            $updates = array_merge($updates, [
+                'payment_method' => 'CBE',
+                'bank_name' => 'CBE',
+                'account_holder' => $data['holder'],
+                'account_number' => $data['acct'],
+                'telebirr_number' => $data['telebirr'] ?? null,
+                'id_type' => $data['idType'],
+                'id_number' => $data['idNo'] ?? null,
+            ]);
+        }
+        if (in_array('social', $sections, true)) {
+            $updates = array_merge($updates, [
+                'instagram' => $data['ig'] ?? null,
+                'facebook' => $data['fb'] ?? null,
+                'linkedin' => $data['li'] ?? null,
+                'tiktok' => $data['tt'] ?? null,
+            ]);
+        }
+
+        $usher->update($updates);
+
+        if (in_array('photos', $sections, true)) {
+            foreach (['photo1' => 'profile', 'photo2' => 'additional', 'photo3' => 'additional'] as $field => $kind) {
+                if (! $request->hasFile($field)) {
+                    continue;
+                }
+                if ($kind === 'profile') {
+                    $existing = $usher->photos()->where('kind', 'profile')->get();
+                    foreach ($existing as $photo) {
+                        StoredPhoto::delete($photo->path);
+                        $photo->delete();
+                    }
+                }
+                $path = StoredPhoto::store($request->file($field), 'ushers/'.$usher->id);
+                $usher->photos()->create(['path' => $path, 'kind' => $kind]);
             }
-            if ($kind === 'profile') {
-                $existing = $usher->photos()->where('kind', 'profile')->get();
+        }
+
+        if (in_array('payment', $sections, true)) {
+            foreach (['idPhotoFront' => 'id_front', 'idPhotoBack' => 'id_back'] as $field => $kind) {
+                if (! $request->hasFile($field)) {
+                    continue;
+                }
+                $existingKinds = $kind === 'id_front' ? ['id_front', 'id'] : ['id_back'];
+                $existing = $usher->photos()->whereIn('kind', $existingKinds)->get();
                 foreach ($existing as $photo) {
                     StoredPhoto::delete($photo->path);
                     $photo->delete();
                 }
+                $path = StoredPhoto::store($request->file($field), 'ushers/'.$usher->id);
+                $usher->photos()->create(['path' => $path, 'kind' => $kind]);
             }
-            $path = StoredPhoto::store($request->file($field), 'ushers/'.$usher->id);
-            $usher->photos()->create(['path' => $path, 'kind' => $kind]);
-        }
-
-        foreach (['idPhotoFront' => 'id_front', 'idPhotoBack' => 'id_back'] as $field => $kind) {
-            if (! $request->hasFile($field)) {
-                continue;
-            }
-            $existingKinds = $kind === 'id_front' ? ['id_front', 'id'] : ['id_back'];
-            $existing = $usher->photos()->whereIn('kind', $existingKinds)->get();
-            foreach ($existing as $photo) {
-                StoredPhoto::delete($photo->path);
-                $photo->delete();
-            }
-            $path = StoredPhoto::store($request->file($field), 'ushers/'.$usher->id);
-            $usher->photos()->create(['path' => $path, 'kind' => $kind]);
         }
 
         return response()->json(['ok' => true]);
@@ -237,6 +308,8 @@ class PublicUsherProfileController extends Controller
             'tiktok' => $usher->tiktok,
             'status' => $usher->status,
             'photos' => $photos,
+            'correctionSections' => $usher->correctionSections(),
+            'correctionNote' => $usher->correction_note,
         ];
     }
 }

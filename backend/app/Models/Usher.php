@@ -17,7 +17,17 @@ class Usher extends Model
         'tshirt_size', 'shirt_size', 'trouser_size', 'shoe_size',
         'payment_method', 'bank_name', 'account_holder', 'account_number', 'telebirr_number',
         'id_type', 'id_number', 'instagram', 'facebook', 'linkedin', 'tiktok',
-        'profile_edit_token',
+        'profile_edit_token', 'correction_sections', 'correction_note',
+    ];
+
+    public const CORRECTION_SECTIONS = [
+        'about',
+        'emergency',
+        'background',
+        'skills',
+        'photos',
+        'payment',
+        'social',
     ];
 
     protected function casts(): array
@@ -28,8 +38,24 @@ class Usher extends Model
             'skills' => 'array',
             'languages' => 'array',
             'preferred_event_types' => 'array',
+            'correction_sections' => 'array',
             'rating' => 'float',
         ];
+    }
+
+    public function correctionSections(): array
+    {
+        $sections = $this->correction_sections ?? [];
+        if ($sections === []) {
+            return self::CORRECTION_SECTIONS;
+        }
+
+        return array_values(array_intersect(self::CORRECTION_SECTIONS, $sections));
+    }
+
+    public function needsCorrectionSection(string $section): bool
+    {
+        return in_array($section, $this->correctionSections(), true);
     }
 
     public function experiences(): HasMany
@@ -134,6 +160,8 @@ class Usher extends Model
             'dateOfBirth' => $this->date_of_birth?->format('M j, Y'),
             'dob' => $this->date_of_birth?->format('Y-m-d'),
             'profileEditToken' => $this->profile_edit_token,
+            'correctionSections' => $this->correction_sections ?? [],
+            'correctionNote' => $this->correction_note,
             'telegram' => $this->telegram,
             'emergencyContactName' => $this->emergency_contact_name,
             'emergencyContactRelationship' => $this->emergency_contact_relationship,

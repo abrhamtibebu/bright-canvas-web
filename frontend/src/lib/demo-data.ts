@@ -25,6 +25,8 @@ export type Usher = {
   dateOfBirth?: string | null;
   dob?: string | null;
   profileEditToken?: string | null;
+  correctionSections?: string[];
+  correctionNote?: string | null;
   telegram?: string | null;
   emergencyContactName?: string | null;
   emergencyContactRelationship?: string | null;

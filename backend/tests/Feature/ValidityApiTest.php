@@ -626,14 +626,19 @@ class ValidityApiTest extends TestCase
         $usher = Usher::query()->firstOrFail();
         $updated = $this->patchJson('/api/ushers/'.$usher->id, [
             'status' => 'Correction Required',
+            'correctionSections' => ['about', 'payment'],
+            'correctionNote' => 'Please fix your bank account and phone number.',
         ])->assertOk()->json();
 
         $this->assertSame('Correction Required', $updated['status']);
         $this->assertNotEmpty($updated['profileEditToken']);
+        $this->assertSame(['about', 'payment'], $updated['correctionSections']);
+        $this->assertSame('Please fix your bank account and phone number.', $updated['correctionNote']);
 
         $token = $updated['profileEditToken'];
         $profile = $this->getJson('/api/public/profile/'.$token)->assertOk()->json();
         $this->assertSame($usher->name, $profile['name']);
+        $this->assertSame(['about', 'payment'], $profile['correctionSections']);
 
         $this->post('/api/public/profile/'.$token, [
             'name' => 'Corrected Usher',
@@ -642,13 +647,12 @@ class ValidityApiTest extends TestCase
             'dob' => '1998-05-05',
             'city' => 'Addis Ababa',
             'address' => 'Kazanchis',
-            'ecName' => 'Contact',
-            'ecRel' => 'Sister',
-            'ecPhone' => '+251911111112',
             'bank' => 'CBE',
             'holder' => 'Corrected Usher',
             'acct' => '1000987654321',
             'idType' => 'Passport',
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
         ])->assertOk();
 
         $this->assertDatabaseHas('ushers', [
@@ -656,7 +660,9 @@ class ValidityApiTest extends TestCase
             'name' => 'Corrected Usher',
             'status' => 'Pending',
             'account_number' => '1000987654321',
+            'correction_note' => null,
         ]);
+        $this->assertNull(Usher::query()->findOrFail($usher->id)->correction_sections);
     }
 
     public function test_admin_can_edit_usher_details(): void

@@ -291,7 +291,10 @@ type EditableProfile={
   tshirtSize?:string|null;shirtSize?:string|null;trouserSize?:string|null;shoeSize?:string|null;
   accountHolder?:string|null;accountNumber?:string|null;telebirrNumber?:string|null;idType?:string|null;idNumber?:string|null;
   idPhoto?:string|null;idPhotoFront?:string|null;idPhotoBack?:string|null;photos?:string[];instagram?:string|null;facebook?:string|null;linkedin?:string|null;tiktok?:string|null;
+  correctionSections?:string[];correctionNote?:string|null;
 };
+
+const ALL_CORRECTION_SECTIONS=['about','emergency','background','skills','photos','payment','social'] as const;
 
 export function ProfileEditPage({token}:{token:string}){
   const [profile,setProfile]=useState<EditableProfile|null>(null);
@@ -307,11 +310,14 @@ export function ProfileEditPage({token}:{token:string}){
   if(done)return <PublicShell variant="reg"><div className="reg-success"><CheckCircle2 className="big-icon"/><h1>Updates received</h1><p className="subtext">Thank you. The Validity team will review your corrected profile.</p></div></PublicShell>;
   if(loadError)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{loadError}</p></div></PublicShell>;
   if(!profile)return <PublicShell><LoadingMark label="Loading your profile…" /></PublicShell>;
+  const sections=(profile.correctionSections?.length?profile.correctionSections:ALL_CORRECTION_SECTIONS) as string[];
+  const show=(id:string)=>sections.includes(id);
   return <PublicShell variant="reg"><form className="reg-form profile-edit-form" onSubmit={e=>{e.preventDefault();if(submitting)return;const form=e.currentTarget;if(!form.checkValidity()){form.reportValidity();return;}setError('');setSubmitting(true);const body=new FormData(form);(['photo1','photo2','photo3','idPhoto','idPhotoFront','idPhotoBack'] as const).forEach(key=>body.delete(key));photos.slice(0,3).forEach((file,index)=>body.append(`photo${index+1}`,file));if(idPhotoFront)body.append('idPhotoFront',idPhotoFront);if(idPhotoBack)body.append('idPhotoBack',idPhotoBack);void api(`/api/public/profile/${token}`,{method:'POST',body}).then(()=>setDone(true)).catch(err=>{if(err instanceof ApiError)setError(err.firstError()||err.message||'Could not save your updates.');else setError('Something went wrong. Check your connection and try again.');requestAnimationFrame(()=>errorRef.current?.scrollIntoView({behavior:'smooth',block:'nearest'}))}).finally(()=>setSubmitting(false))}}>
-    <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Update your usher profile</p><p className="subtext">Correct anything that needs changing, then submit for review.</p></div>
+    <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Update your usher profile</p><p className="subtext">Please update the highlighted sections requested by Validity, then submit for review.</p></div>
+    {profile.correctionNote&&<p className="correction-note" role="note"><strong>From Validity: </strong>{profile.correctionNote}</p>}
     {error&&<p ref={errorRef} role="alert" aria-live="assertive" className="reg-error">{error}</p>}
     <div className="reg-body">
-      <Section title="About you">
+      {show('about')&&<Section title="About you">
         <F label="Full name" name="name" required defaultValue={profile.name}/>
         <F label="Phone number" name="phone" type="tel" required defaultValue={profile.phone??''}/>
         <F label="Gender" name="gender" required options={['Female','Male']} defaultValue={profile.gender||''}/>
@@ -320,21 +326,21 @@ export function ProfileEditPage({token}:{token:string}){
         <F label="Address" name="address" required full defaultValue={profile.address??''}/>
         <F label="Email" name="email" type="email" defaultValue={profile.email??''}/>
         <F label="Telegram username" name="telegram" defaultValue={profile.telegram??''}/>
-      </Section>
-      <Section title="Emergency contact">
+      </Section>}
+      {show('emergency')&&<Section title="Emergency contact">
         <F label="Contact name" name="ecName" required full defaultValue={profile.emergencyContactName??''}/>
         <F label="Relationship" name="ecRel" required defaultValue={profile.emergencyContactRelationship??''}/>
         <F label="Phone number" name="ecPhone" type="tel" required defaultValue={profile.emergencyContactPhone??''}/>
-      </Section>
-      <Section title="Background">
+      </Section>}
+      {show('background')&&<Section title="Background">
         <F label="Highest education level" name="edu" options={['High school','Diploma','Bachelor’s degree','Master’s degree','Other']} defaultValue={profile.educationLevel??''}/>
         <F label="Institution" name="inst" defaultValue={profile.institution??''}/>
         <F label="Field of study" name="field" full defaultValue={profile.fieldOfStudy??''}/>
         <F label="Current occupation" name="occ" defaultValue={profile.occupation??''}/>
         <F label="Employer / company" name="employer" defaultValue={profile.employer??''}/>
         <F label="Employment status" name="empStatus" full options={['Student','Employed','Self-employed','Unemployed','Freelancer']} defaultValue={profile.employmentStatus??''}/>
-      </Section>
-      <Section title="Languages & skills">
+      </Section>}
+      {show('skills')&&<Section title="Languages & skills">
         <Checks label="Languages you speak" name="languages" items={['Amharic','English','Afaan Oromo','Tigrinya','Somali','Arabic','Other']} selected={profile.languages}/>
         <F label="Other languages" name="otherLang" full defaultValue={profile.otherLanguages??''}/>
         <Checks label="Skills" name="skills" items={['Registration','Guest Relations','VIP Handling','Crowd Management','Hospitality','Brand Ambassador','Ticketing','Check-in','Event Protocol','Public Speaking','Customer Service','Team Leader','Supervisor','Technical Support']} selected={profile.skills}/>
@@ -342,8 +348,8 @@ export function ProfileEditPage({token}:{token:string}){
         <F label="General availability" name="availability" full options={['Weekdays','Weekends','Weekdays & weekends','Evenings only']} defaultValue={profile.availability??''}/>
         <F label="Years of event experience" name="years" type="number" defaultValue={profile.experience??0}/>
         <F label="Number of events worked" name="events" type="number" defaultValue={profile.events??0}/>
-      </Section>
-      <Section title="Photos & sizes">
+      </Section>}
+      {show('photos')&&<Section title="Photos & sizes">
         <p className="full subtext">Current photos stay unless you upload replacements. New images are compressed to stay under 2 MB.</p>
         {(profile.photos?.length??0)>0&&<div className="full"><UsherPhotos usher={{id:0,name:profile.name,city:profile.city||'',gender:profile.gender||'',experience:0,events:0,rating:0,skills:[],languages:[],status:'Pending',available:true,photos:profile.photos}}/></div>}
         <PhotoPicker files={photos} onChange={setPhotos}/>
@@ -351,8 +357,8 @@ export function ProfileEditPage({token}:{token:string}){
         <F label="Shirt size" name="shirt" options={['XS','S','M','L','XL','XXL']} defaultValue={profile.shirtSize??''}/>
         <F label="Trouser size" name="trouser" defaultValue={profile.trouserSize??''}/>
         <F label="Shoe size" name="shoe" defaultValue={profile.shoeSize??''}/>
-      </Section>
-      <Section title="Payment & ID (private)">
+      </Section>}
+      {show('payment')&&<Section title="Payment & ID (private)">
         <div className="full"><small className="text-muted-foreground">Bank</small><strong>CBE</strong><input type="hidden" name="bank" value="CBE"/></div>
         <F label="Account holder name" name="holder" required full defaultValue={profile.accountHolder??''}/>
         <F label="CBE account number" name="acct" required full placeholder="1000…" pattern="1000[0-9]+" inputMode="numeric" title="Must start with 1000 and contain digits only" defaultValue={profile.accountNumber??''}/>
@@ -364,13 +370,13 @@ export function ProfileEditPage({token}:{token:string}){
         {profile.idPhotoBack&&<div className="full"><small className="block text-muted-foreground mb-2">Current ID back</small><UsherPhotos usher={{id:0,name:profile.name,city:profile.city||'',gender:profile.gender||'',experience:0,events:0,rating:0,skills:[],languages:[],status:'Pending',available:true,photos:[profile.idPhotoBack]}}/></div>}
         <IdPhotoPicker label="ID back" file={idPhotoBack} onChange={setIdPhotoBack} required={!profile.idPhotoBack} hint="back side — leave empty to keep the current photo"/>
         <p className="full subtext">Upload replacements only if you need to change an ID photo.</p>
-      </Section>
-      <Section title="Social">
+      </Section>}
+      {show('social')&&<Section title="Social">
         <F label="Instagram" name="ig" defaultValue={profile.instagram??''}/>
         <F label="Facebook" name="fb" defaultValue={profile.facebook??''}/>
         <F label="LinkedIn" name="li" defaultValue={profile.linkedin??''}/>
         <F label="TikTok" name="tt" defaultValue={profile.tiktok??''}/>
-      </Section>
+      </Section>}
     </div>
     <div className="reg-nav"><Button type="submit" size="lg" pending={submitting}>Submit corrections</Button></div>
   </form></PublicShell>;

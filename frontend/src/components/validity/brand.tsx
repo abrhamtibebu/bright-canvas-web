@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { apiUrl, authorizedBlob } from "@/lib/api";
 import { initials, type Usher } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
@@ -67,11 +68,19 @@ function PhotoTile({ path, alt, onRemove }: { path: string; alt: string; onRemov
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setOpen(false);
+      }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey, true);
+    };
   }, [open]);
   if (photo.state === "missing") return null;
   if (!photo.src) return <div className="photo-tile" aria-hidden="true" />;
@@ -85,14 +94,16 @@ function PhotoTile({ path, alt, onRemove }: { path: string; alt: string; onRemov
           Remove
         </Button>
       )}
-      {open && (
-        <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={alt} onClick={() => setOpen(false)}>
-          <img src={photo.src} alt={alt} onClick={(event) => event.stopPropagation()} />
-          <button type="button" className="photo-lightbox-close" onClick={() => setOpen(false)}>
-            Close
-          </button>
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={alt} onClick={() => setOpen(false)}>
+            <img src={photo.src} alt={alt} onClick={(event) => event.stopPropagation()} />
+            <button type="button" className="photo-lightbox-close" onClick={() => setOpen(false)}>
+              Close
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
