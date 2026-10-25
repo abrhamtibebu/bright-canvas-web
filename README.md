@@ -50,6 +50,8 @@ After connecting the repository in Render, set:
 - `APP_KEY` — output of `php artisan key:generate --show`
 - `APP_URL` — the service URL, including `https://`
 - `FRONTEND_URL` — the web app origin
+- `TEXTBEE_API_KEY` — textbee.dev API key for correction and availability SMS (optional)
+- `TEXTBEE_DEVICE_ID` — sending Android device id (optional)
 - `SANCTUM_STATEFUL_DOMAINS` — that same frontend host, without the scheme
 - R2 variables above when using cloud photo storage
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Api\CpanelMigrateController;
 use App\Models\Assignment;
 use App\Models\Project;
 use App\Models\Usher;
@@ -32,16 +33,12 @@ class ValidityApiTest extends TestCase
             'origin' => 'http://localhost:3000',
         ];
 
-        $this->withHeaders($headers)->get('/sanctum/csrf-cookie')->assertNoContent();
-        $this->withHeaders([
-            ...$headers,
-            'X-XSRF-TOKEN' => csrf_token(),
-        ])->postJson('/api/login', [
+        $login = $this->withHeaders($headers)->postJson('/api/login', [
             'email' => 'admin@validity.et',
             'password' => 'ValidityAdmin@2026',
         ])->assertOk()->assertJsonPath('email', 'admin@validity.et');
 
-        $this->withHeaders($headers)->getJson('/api/ushers')->assertOk()->assertJsonCount(10);
+        $this->withToken($login->json('token'))->getJson('/api/ushers')->assertOk()->assertJsonCount(10);
     }
 
     public function test_registration_requires_a_profile_photo(): void
@@ -59,7 +56,13 @@ class ValidityApiTest extends TestCase
             'ecName' => 'Sara Bekele',
             'ecRel' => 'Sister',
             'ecPhone' => '+251911000001',
-        ])->assertStatus(422);
+            'bank' => 'CBE',
+            'holder' => 'Liya Bekele',
+            'acct' => '1000123456789',
+            'idType' => 'National ID (Fayda)',
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
+        ])->assertStatus(422)->assertJsonValidationErrors(['photo1']);
     }
 
     public function test_registration_rejects_ushers_under_18(): void
@@ -162,6 +165,44 @@ class ValidityApiTest extends TestCase
         $this->assertDatabaseHas('usher_experiences', [
             'event_name' => 'Addis Expo',
         ]);
+    }
+
+    public function test_registration_rejects_a_duplicate_phone_number(): void
+    {
+        $this->seed();
+        $token = WorkspaceSetting::query()->firstOrFail()->registration_token;
+        $payload = [
+            'name' => 'Liya Bekele',
+            'phone' => '+251911000000',
+            'gender' => 'Female',
+            'dob' => '2000-01-01',
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+            'ecName' => 'Sara Bekele',
+            'ecRel' => 'Sister',
+            'ecPhone' => '+251911000001',
+            'bank' => 'CBE',
+            'holder' => 'Liya Bekele',
+            'acct' => '1000123456789',
+            'photo1' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'),
+            'idType' => 'National ID (Fayda)',
+            'idPhotoFront' => UploadedFile::fake()->create('id-front.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back.jpg', 100, 'image/jpeg'),
+        ];
+
+        $this->post('/api/public/register/'.$token, $payload)->assertCreated();
+
+        $this->post('/api/public/register/'.$token, [
+            ...$payload,
+            'name' => 'Liya Duplicate',
+            'phone' => '0911 000 000',
+            'acct' => '1000987654321',
+            'photo1' => UploadedFile::fake()->create('photo2.jpg', 100, 'image/jpeg'),
+            'idPhotoFront' => UploadedFile::fake()->create('id-front-2.jpg', 100, 'image/jpeg'),
+            'idPhotoBack' => UploadedFile::fake()->create('id-back-2.jpg', 100, 'image/jpeg'),
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath('errors.phone.0', 'This phone number is already registered.');
     }
 
     public function test_registration_requires_an_id_photo(): void
@@ -665,6 +706,88 @@ class ValidityApiTest extends TestCase
         $this->assertNull(Usher::query()->findOrFail($usher->id)->correction_sections);
     }
 
+    public function test_social_only_correction_does_not_require_other_sections(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $usher = Usher::query()->firstOrFail();
+        $originalName = $usher->name;
+        $originalPhone = $usher->phone;
+
+        $updated = $this->patchJson('/api/ushers/'.$usher->id, [
+            'status' => 'Correction Required',
+            'correctionSections' => ['social'],
+        ])->assertOk()->json();
+
+        $token = $updated['profileEditToken'];
+        $this->assertSame(['social'], $updated['correctionSections']);
+
+        $this->post('/api/public/profile/'.$token, [
+            'ig' => 'https://instagram.com/validity.usher',
+            'fb' => '',
+            'li' => '',
+            'tt' => '',
+        ])->assertOk();
+
+        $fresh = Usher::query()->findOrFail($usher->id);
+        $this->assertSame($originalName, $fresh->name);
+        $this->assertSame($originalPhone, $fresh->phone);
+        $this->assertSame('https://instagram.com/validity.usher', $fresh->instagram);
+        $this->assertNull($fresh->facebook);
+        $this->assertSame('Pending', $fresh->status);
+        $this->assertNull($fresh->correction_sections);
+    }
+
+    public function test_social_only_correction_accepts_instagram_urls_longer_than_255_characters(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $usher = Usher::query()->firstOrFail();
+        $token = $this->patchJson('/api/ushers/'.$usher->id, [
+            'status' => 'Correction Required',
+            'correctionSections' => ['social'],
+        ])->assertOk()->json('profileEditToken');
+
+        $url = 'https://www.instagram.com/p/'.str_repeat('a', 280).'/?igsh='.str_repeat('b', 80);
+
+        $this->post('/api/public/profile/'.$token, [
+            'ig' => $url,
+            'fb' => '',
+            'li' => '',
+            'tt' => '',
+        ])->assertOk();
+
+        $this->assertSame($url, Usher::query()->findOrFail($usher->id)->instagram);
+    }
+
+    public function test_empty_correction_sections_infer_social_from_posted_keys(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $usher = Usher::query()->firstOrFail();
+        $originalName = $usher->name;
+        $token = $this->patchJson('/api/ushers/'.$usher->id, [
+            'status' => 'Correction Required',
+            'correctionSections' => ['social'],
+        ])->assertOk()->json('profileEditToken');
+
+        $usher->update(['correction_sections' => []]);
+
+        $this->post('/api/public/profile/'.$token, [
+            'ig' => 'https://instagram.com/inferred.social',
+            'fb' => '',
+            'li' => '',
+            'tt' => '',
+        ])->assertOk();
+
+        $fresh = Usher::query()->findOrFail($usher->id);
+        $this->assertSame($originalName, $fresh->name);
+        $this->assertSame('https://instagram.com/inferred.social', $fresh->instagram);
+    }
+
     public function test_admin_can_edit_usher_details(): void
     {
         $this->seed();
@@ -685,5 +808,67 @@ class ValidityApiTest extends TestCase
             'city' => 'Adama',
             'account_number' => '1000111222333',
         ]);
+    }
+
+    public function test_registration_link_can_be_probed_paused_and_rotated(): void
+    {
+        $this->seed();
+        $setting = WorkspaceSetting::query()->firstOrFail();
+        $old = $setting->registration_token;
+
+        $this->getJson('/api/public/register/'.$old)->assertOk()->assertJsonPath('ok', true);
+
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+        $this->patchJson('/api/workspace', ['registrationOpen' => false])
+            ->assertOk()
+            ->assertJsonPath('registrationOpen', false);
+
+        $this->getJson('/api/public/register/'.$old)->assertNotFound();
+
+        $rotated = $this->postJson('/api/workspace/registration-link/rotate')
+            ->assertOk()
+            ->json();
+        $this->assertTrue($rotated['registrationOpen']);
+        $this->assertNotSame($old, $rotated['registrationToken']);
+        $this->getJson('/api/public/register/'.$old)->assertNotFound();
+        $this->getJson('/api/public/register/'.$rotated['registrationToken'])->assertOk();
+    }
+
+    public function test_admin_can_rotate_project_public_links(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+        $project = Project::query()->firstOrFail();
+        $old = $project->availability_token;
+
+        $this->postJson('/api/projects/'.$project->id.'/links/availability/rotate')->assertOk();
+        $this->assertNotSame($old, $project->fresh()->availability_token);
+        $this->getJson('/api/public/availability/'.$old)->assertNotFound();
+    }
+
+    public function test_admin_can_revoke_and_rotate_correction_links(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+        $usher = Usher::query()->firstOrFail();
+        $this->patchJson('/api/ushers/'.$usher->id, [
+            'status' => 'Correction Required',
+            'correctionSections' => ['about'],
+        ])->assertOk();
+        $token = $usher->fresh()->profile_edit_token;
+        $this->assertNotEmpty($token);
+        $this->getJson('/api/public/profile/'.$token)->assertOk();
+
+        $this->postJson('/api/ushers/'.$usher->id.'/correction-link/revoke')->assertOk();
+        $this->getJson('/api/public/profile/'.$token)->assertNotFound();
+
+        $new = $this->postJson('/api/ushers/'.$usher->id.'/correction-link/rotate')->assertOk()->json('profileEditToken');
+        $this->assertNotSame($token, $new);
+        $this->getJson('/api/public/profile/'.$new)->assertOk();
+    }
+
+    public function test_schema_migrate_rejects_wrong_key(): void
+    {
+        $this->get('/api/public/schema-migrate?key=wrong')->assertNotFound();
     }
 }

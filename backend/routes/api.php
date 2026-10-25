@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AssignmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CpanelMigrateController;
 use App\Http\Controllers\Api\ExportController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProjectController;
@@ -20,6 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/workspace', [WorkspaceController::class, 'show']);
+    Route::patch('/workspace', [WorkspaceController::class, 'update']);
+    Route::post('/workspace/registration-link/rotate', [WorkspaceController::class, 'rotateRegistration']);
     Route::get('/ushers', [UsherController::class, 'index']);
     Route::post('/ushers', [UsherController::class, 'store']);
     Route::get('/ushers/{usher}/photos/{photo}', [UsherController::class, 'photo']);
@@ -33,6 +36,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/{project}', [ProjectController::class, 'show']);
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
     Route::post('/projects/{project}/invitations', [ProjectController::class, 'invite']);
+    Route::post('/projects/{project}/invitations/sms', [ProjectController::class, 'sendAvailabilitySms']);
+    Route::post('/projects/{project}/links/{kind}/rotate', [ProjectController::class, 'rotateLink']);
+    Route::post('/ushers/{usher}/correction-link/revoke', [UsherController::class, 'revokeCorrectionLink']);
+    Route::post('/ushers/{usher}/correction-link/rotate', [UsherController::class, 'rotateCorrectionLink']);
+    Route::post('/ushers/{usher}/correction-link/sms', [UsherController::class, 'sendCorrectionSms']);
     Route::post('/projects/{project}/selection', [ProjectController::class, 'select']);
     Route::post('/projects/{project}/ratings', [RatingController::class, 'store']);
     Route::get('/assignments', [AssignmentController::class, 'index']);
@@ -45,7 +53,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports', [ReportController::class, 'show']);
 });
 
+Route::get('/public/schema-migrate', CpanelMigrateController::class);
 Route::get('/public/photos/{token}/{photo}', [PublicProjectController::class, 'photo']);
+Route::get('/public/register/{token}', [PublicRegistrationController::class, 'show']);
 Route::post('/public/register/{token}', [PublicRegistrationController::class, 'store']);
 Route::get('/public/profile/{token}', [PublicUsherProfileController::class, 'show']);
 Route::post('/public/profile/{token}', [PublicUsherProfileController::class, 'update']);

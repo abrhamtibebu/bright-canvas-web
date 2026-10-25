@@ -68,16 +68,18 @@ function PhotoTile({ path, alt, onRemove }: { path: string; alt: string; onRemov
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
+    document.documentElement.classList.add("photo-lightbox-open");
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        setOpen(false);
-      }
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
     };
     window.addEventListener("keydown", onKey, true);
     return () => {
+      document.documentElement.classList.remove("photo-lightbox-open");
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey, true);
     };
@@ -98,7 +100,7 @@ function PhotoTile({ path, alt, onRemove }: { path: string; alt: string; onRemov
         createPortal(
           <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={alt} onClick={() => setOpen(false)}>
             <img src={photo.src} alt={alt} onClick={(event) => event.stopPropagation()} />
-            <button type="button" className="photo-lightbox-close" onClick={() => setOpen(false)}>
+            <button type="button" className="photo-lightbox-close" autoFocus onClick={() => setOpen(false)}>
               Close
             </button>
           </div>,

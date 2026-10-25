@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { api, logout } from "@/lib/api";
 import type { Admin, Assignment, Project, Reports, Usher, WorkspaceInfo } from "@/lib/demo-data";
+import type { SmsStatus } from "@/lib/sms";
 
 const publicPrefixes = ["/register", "/respond", "/confirm", "/client", "/rate", "/login", "/profile"];
 
@@ -80,12 +81,19 @@ type WorkspaceData = {
     compensation: string;
     dress_code: string;
   }) => Promise<void>;
-  invite: (projectId: number, usherIds: number[]) => Promise<void>;
+  invite: (projectId: number, usherIds: number[]) => Promise<{ prepared: number; sms?: SmsStatus }>;
+  resendCorrectionSms: (usherId: number) => Promise<Usher>;
+  resendAvailabilitySms: (projectId: number) => Promise<{ prepared: number; sms?: SmsStatus }>;
   setResponse: (assignmentId: number, response: string) => Promise<void>;
   setAttendance: (assignmentId: number, attendance: string) => Promise<void>;
   setPaymentStatus: (assignmentId: number, paymentStatus: string) => Promise<void>;
   selectTeam: (projectId: number, usherIds: number[]) => Promise<void>;
   rateUsher: (projectId: number, usherId: number, score: string, comment: string) => Promise<void>;
+  setRegistrationOpen: (open: boolean) => Promise<void>;
+  rotateRegistrationLink: () => Promise<WorkspaceInfo>;
+  rotateProjectLink: (projectId: number, kind: "availability" | "client" | "rating") => Promise<void>;
+  revokeCorrectionLink: (usherId: number) => Promise<Usher>;
+  rotateCorrectionLink: (usherId: number) => Promise<Usher>;
   logout: () => Promise<void>;
 };
 
@@ -210,11 +218,24 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       await refresh();
     },
     invite: async (projectId, usherIds) => {
-      await api(`/api/projects/${projectId}/invitations`, {
+      const result = await api<{ prepared: number; sms?: SmsStatus }>(`/api/projects/${projectId}/invitations`, {
         method: "POST",
         body: JSON.stringify({ usher_ids: usherIds }),
       });
       await refresh();
+      return result;
+    },
+    resendCorrectionSms: async (usherId) => {
+      const updated = await api<Usher>(`/api/ushers/${usherId}/correction-link/sms`, { method: "POST" });
+      await refresh();
+      return updated;
+    },
+    resendAvailabilitySms: async (projectId) => {
+      const result = await api<{ prepared: number; sms?: SmsStatus }>(`/api/projects/${projectId}/invitations/sms`, {
+        method: "POST",
+      });
+      await refresh();
+      return result;
     },
     setResponse: async (assignmentId, response) => {
       await api(`/api/assignments/${assignmentId}`, {
@@ -250,6 +271,29 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ usher_id: usherId, score: Number(score), comment }),
       });
       await refresh();
+    },
+    setRegistrationOpen: async (open) => {
+      await api("/api/workspace", { method: "PATCH", body: JSON.stringify({ registrationOpen: open }) });
+      await refresh();
+    },
+    rotateRegistrationLink: async () => {
+      const updated = await api<WorkspaceInfo>("/api/workspace/registration-link/rotate", { method: "POST" });
+      await refresh();
+      return updated;
+    },
+    rotateProjectLink: async (projectId, kind) => {
+      await api(`/api/projects/${projectId}/links/${kind}/rotate`, { method: "POST" });
+      await refresh();
+    },
+    revokeCorrectionLink: async (usherId) => {
+      const updated = await api<Usher>(`/api/ushers/${usherId}/correction-link/revoke`, { method: "POST" });
+      await refresh();
+      return updated;
+    },
+    rotateCorrectionLink: async (usherId) => {
+      const updated = await api<Usher>(`/api/ushers/${usherId}/correction-link/rotate`, { method: "POST" });
+      await refresh();
+      return updated;
     },
     logout: async () => {
       await logout();

@@ -45,12 +45,52 @@ class Usher extends Model
 
     public function correctionSections(): array
     {
-        $sections = $this->correction_sections ?? [];
-        if ($sections === []) {
-            return self::CORRECTION_SECTIONS;
+        $stored = array_values(array_intersect(self::CORRECTION_SECTIONS, $this->correction_sections ?? []));
+
+        return $stored !== [] ? $stored : self::CORRECTION_SECTIONS;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function correctionSectionsForUpdate(\Illuminate\Http\Request $request): array
+    {
+        $stored = array_values(array_intersect(self::CORRECTION_SECTIONS, $this->correction_sections ?? []));
+        if ($stored !== []) {
+            return $stored;
         }
 
-        return array_values(array_intersect(self::CORRECTION_SECTIONS, $sections));
+        $inferred = self::inferSectionsFromRequest($request);
+
+        return $inferred !== [] ? $inferred : ['social'];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function inferSectionsFromRequest(\Illuminate\Http\Request $request): array
+    {
+        $map = [
+            'about' => ['name', 'phone', 'gender', 'dob', 'city', 'address', 'email', 'telegram'],
+            'emergency' => ['ecName', 'ecRel', 'ecPhone'],
+            'background' => ['edu', 'inst', 'field', 'occ', 'employer', 'empStatus'],
+            'skills' => ['languages', 'otherLang', 'years', 'events', 'skills', 'prefs', 'availability'],
+            'photos' => ['tshirt', 'shirt', 'trouser', 'shoe', 'photo1', 'photo2', 'photo3'],
+            'payment' => ['bank', 'holder', 'acct', 'telebirr', 'idType', 'idNo', 'idPhotoFront', 'idPhotoBack'],
+            'social' => ['ig', 'fb', 'li', 'tt'],
+        ];
+
+        $found = [];
+        foreach ($map as $section => $keys) {
+            foreach ($keys as $key) {
+                if ($request->has($key) || $request->hasFile($key)) {
+                    $found[] = $section;
+                    break;
+                }
+            }
+        }
+
+        return $found;
     }
 
     public function needsCorrectionSection(string $section): bool

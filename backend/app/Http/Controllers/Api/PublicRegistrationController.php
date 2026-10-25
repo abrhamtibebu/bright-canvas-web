@@ -5,21 +5,29 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Usher;
 use App\Models\WorkspaceSetting;
+use App\Support\PhoneNumber;
 use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PublicRegistrationController extends Controller
 {
+    public function show(string $token): JsonResponse
+    {
+        WorkspaceSetting::requireOpenToken($token);
+
+        return response()->json(['ok' => true]);
+    }
+
     public function store(Request $request, string $token): JsonResponse
     {
-        WorkspaceSetting::query()->where('registration_token', $token)->firstOrFail();
+        WorkspaceSetting::requireOpenToken($token);
 
         $adultBy = now()->subYears(18)->toDateString();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'min:3', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
+            'phone' => ['required', 'string', 'max:50', ...PhoneNumber::uniqueRule()],
             'gender' => ['required', 'in:Female,Male'],
             'dob' => ['required', 'date', 'before_or_equal:'.$adultBy],
             'city' => ['required', 'string', 'max:100'],
@@ -60,11 +68,12 @@ class PublicRegistrationController extends Controller
             'idNo' => ['nullable', 'string', 'max:100'],
             'idPhotoFront' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
             'idPhotoBack' => ['required', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
-            'ig' => ['nullable', 'string', 'max:255'],
-            'fb' => ['nullable', 'string', 'max:255'],
-            'li' => ['nullable', 'string', 'max:255'],
-            'tt' => ['nullable', 'string', 'max:255'],
+            'ig' => ['nullable', 'string', 'max:2048'],
+            'fb' => ['nullable', 'string', 'max:2048'],
+            'li' => ['nullable', 'string', 'max:2048'],
+            'tt' => ['nullable', 'string', 'max:2048'],
         ], [
+            'phone.unique' => 'This phone number is already registered.',
             'dob.before_or_equal' => 'Ushers must be 18 or older.',
             'acct.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
             'photo1.max' => 'Each photo must be 2 MB or smaller.',
@@ -112,10 +121,10 @@ class PublicRegistrationController extends Controller
             'telebirr_number' => $data['telebirr'] ?? null,
             'id_type' => $data['idType'],
             'id_number' => $data['idNo'] ?? null,
-            'instagram' => $data['ig'] ?? null,
-            'facebook' => $data['fb'] ?? null,
-            'linkedin' => $data['li'] ?? null,
-            'tiktok' => $data['tt'] ?? null,
+            'instagram' => ($data['ig'] ?? '') !== '' ? $data['ig'] : null,
+            'facebook' => ($data['fb'] ?? '') !== '' ? $data['fb'] : null,
+            'linkedin' => ($data['li'] ?? '') !== '' ? $data['li'] : null,
+            'tiktok' => ($data['tt'] ?? '') !== '' ? $data['tt'] : null,
             'status' => 'Pending',
             'available' => true,
         ]);

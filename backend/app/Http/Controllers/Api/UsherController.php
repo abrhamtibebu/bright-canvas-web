@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Usher;
 use App\Models\UsherPhoto;
+use App\Services\LinkSms;
+use App\Support\PhoneNumber;
 use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,7 +52,7 @@ class UsherController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'min:3', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'max:50', ...PhoneNumber::uniqueRule()],
             'city' => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -125,7 +127,7 @@ class UsherController extends Controller
         $data = $request->validate([
             'status' => ['sometimes', 'in:Active,Correction Required,Pending'],
             'name' => ['sometimes', 'string', 'min:3', 'max:255'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50', ...PhoneNumber::uniqueRule($usher->id)],
             'email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'gender' => ['sometimes', 'nullable', 'string', 'max:50'],
             'dob' => ['sometimes', 'nullable', 'date', 'before_or_equal:'.$adultBy],
@@ -169,6 +171,7 @@ class UsherController extends Controller
             'correctionSections.*' => ['string', 'in:'.implode(',', Usher::CORRECTION_SECTIONS)],
             'correctionNote' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ], [
+            'phone.unique' => 'This phone number is already registered.',
             'dob.before_or_equal' => 'Ushers must be 18 or older.',
             'accountNumber.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
             'correctionSections.min' => 'Select at least one section for the usher to correct.',
@@ -256,12 +259,46 @@ class UsherController extends Controller
             $updates['bank_name'] = 'CBE';
         }
 
+        $sendCorrectionSms = ($data['status'] ?? null) === 'Correction Required';
+
         if ($updates !== []) {
             $usher->update($updates);
         }
 
         $usher->load(['photos', 'experiences', 'references']);
 
+        $payload = $usher->present();
+        if ($sendCorrectionSms) {
+            $payload['sms'] = app(LinkSms::class)->correction($usher);
+        }
+
+        return response()->json($payload);
+    }
+
+    public function revokeCorrectionLink(Usher $usher): JsonResponse
+    {
+        $usher->update(['profile_edit_token' => null]);
+        $usher->load(['photos', 'experiences', 'references']);
+
         return response()->json($usher->present());
+    }
+
+    public function rotateCorrectionLink(Usher $usher): JsonResponse
+    {
+        $usher->update(['profile_edit_token' => Str::random(40)]);
+        $usher->load(['photos', 'experiences', 'references']);
+
+        return response()->json($usher->present() + [
+            'sms' => app(LinkSms::class)->correction($usher),
+        ]);
+    }
+
+    public function sendCorrectionSms(Usher $usher): JsonResponse
+    {
+        $usher->load(['photos', 'experiences', 'references']);
+
+        return response()->json($usher->present() + [
+            'sms' => app(LinkSms::class)->correction($usher),
+        ]);
     }
 }

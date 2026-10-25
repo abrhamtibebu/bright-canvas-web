@@ -32,7 +32,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onEscapeKeyDown, onPointerDownOutside, onFocusOutside, onInteractOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -41,6 +41,22 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1.5rem)] max-w-lg max-h-[min(90dvh,760px)] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg",
         className,
       )}
+      onEscapeKeyDown={(event) => {
+        if (document.documentElement.classList.contains("photo-lightbox-open")) event.preventDefault();
+        onEscapeKeyDown?.(event);
+      }}
+      onPointerDownOutside={(event) => {
+        if (document.documentElement.classList.contains("photo-lightbox-open")) event.preventDefault();
+        onPointerDownOutside?.(event);
+      }}
+      onFocusOutside={(event) => {
+        if (document.documentElement.classList.contains("photo-lightbox-open")) event.preventDefault();
+        onFocusOutside?.(event);
+      }}
+      onInteractOutside={(event) => {
+        if (document.documentElement.classList.contains("photo-lightbox-open")) event.preventDefault();
+        onInteractOutside?.(event);
+      }}
       {...props}
     >
       {children}

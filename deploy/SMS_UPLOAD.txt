@@ -1,0 +1,19 @@
+Validity SMS cPanel upload (no .env, no database, no migrate)
+
+1. Backend overlay
+   Unzip validity-sms-backend-overlay.zip into the Laravel app root
+   (the folder that already contains artisan and the live .env).
+   Overwrite matching files. Do not upload or replace .env or database.sqlite.
+
+2. Edit the existing production .env (File Manager, do not upload a copy)
+   TEXTBEE_API_KEY=your_textbee_key
+   TEXTBEE_DEVICE_ID=optional_device_id
+   TEXTBEE_BASE_URL=https://api.textbee.dev/api/v1
+   FRONTEND_URL must start with https://ushers.evella.et (SMS links use the first origin).
+   Keep APP_DEBUG=false.
+
+3. Frontend
+   Unzip validity-frontend-static.zip into the frontend document root
+   (https://ushers.evella.et). Replace existing files. Keep .htaccess.
+
+4. No schema migrate. SMS does not change the database.

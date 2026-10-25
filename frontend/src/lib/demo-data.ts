@@ -1,3 +1,5 @@
+import type { SmsStatus } from "./sms";
+
 export type UsherExperience = {
   event: string | null;
   client: string | null;
@@ -27,6 +29,7 @@ export type Usher = {
   profileEditToken?: string | null;
   correctionSections?: string[];
   correctionNote?: string | null;
+  sms?: SmsStatus | null;
   telegram?: string | null;
   emergencyContactName?: string | null;
   emergencyContactRelationship?: string | null;
@@ -137,6 +140,7 @@ export type WorkspaceInfo = {
   timezone: string;
   currency: string;
   registrationToken: string;
+  registrationOpen?: boolean;
 };
 
 export type Admin = { name: string; email: string };

@@ -21,9 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return '/login';
         });
-        $middleware->statefulApi();
-        // The site and API are on different hosts, so the browser will not
-        // send the session cookie. Admin routes authenticate with a bearer token.
+        // Admin API authentication is stateless and uses bearer tokens.
         $middleware->validateCsrfTokens(except: ['api/*']);
         $middleware->trustProxies(at: '*');
     })

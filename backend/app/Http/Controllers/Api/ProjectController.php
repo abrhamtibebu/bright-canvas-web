@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Usher;
+use App\Services\LinkSms;
 use App\Support\EventTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
@@ -104,7 +106,33 @@ class ProjectController extends Controller
 
         return response()->json([
             'prepared' => $ushers->count(),
+            'sms' => app(LinkSms::class)->availability($project, $ushers),
         ]);
+    }
+
+    public function sendAvailabilitySms(Project $project): JsonResponse
+    {
+        $ushers = $project->assignments()
+            ->with('usher')
+            ->get()
+            ->pluck('usher')
+            ->filter();
+
+        return response()->json([
+            'prepared' => $ushers->count(),
+            'sms' => app(LinkSms::class)->availability($project, $ushers),
+        ]);
+    }
+
+    public function rotateLink(Project $project, string $kind): JsonResponse
+    {
+        abort_unless(in_array($kind, ['availability', 'client', 'rating'], true), 404);
+        $column = $kind.'_token';
+        $project->{$column} = Str::random(40);
+        $project->save();
+        $project->loadCount(['assignments as confirmed_count' => fn ($query) => $query->where('response', 'Confirmed')]);
+
+        return response()->json($project->present());
     }
 
     public function select(Request $request, Project $project): JsonResponse

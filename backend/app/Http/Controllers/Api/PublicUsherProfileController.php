@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Usher;
 use App\Models\UsherPhoto;
+use App\Support\PhoneNumber;
 use App\Support\StoredPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class PublicUsherProfileController extends Controller
     public function update(Request $request, string $token): JsonResponse
     {
         $usher = $this->findByToken($token);
-        $sections = $usher->correctionSections();
+        $sections = $usher->correctionSectionsForUpdate($request);
         $adultBy = now()->subYears(18)->toDateString();
         $hasFront = $usher->idPhotoPath('front') !== null;
         $hasBack = $usher->idPhotoPath('back') !== null;
@@ -32,7 +33,7 @@ class PublicUsherProfileController extends Controller
         if (in_array('about', $sections, true)) {
             $rules = array_merge($rules, [
                 'name' => ['required', 'string', 'min:3', 'max:255'],
-                'phone' => ['required', 'string', 'max:50'],
+                'phone' => ['required', 'string', 'max:50', ...PhoneNumber::uniqueRule($usher->id)],
                 'gender' => ['required', 'in:Female,Male'],
                 'dob' => ['required', 'date', 'before_or_equal:'.$adultBy],
                 'city' => ['required', 'string', 'max:100'],
@@ -97,14 +98,15 @@ class PublicUsherProfileController extends Controller
         }
         if (in_array('social', $sections, true)) {
             $rules = array_merge($rules, [
-                'ig' => ['nullable', 'string', 'max:255'],
-                'fb' => ['nullable', 'string', 'max:255'],
-                'li' => ['nullable', 'string', 'max:255'],
-                'tt' => ['nullable', 'string', 'max:255'],
+                'ig' => ['nullable', 'string', 'max:2048'],
+                'fb' => ['nullable', 'string', 'max:2048'],
+                'li' => ['nullable', 'string', 'max:2048'],
+                'tt' => ['nullable', 'string', 'max:2048'],
             ]);
         }
 
         $data = $request->validate($rules, [
+            'phone.unique' => 'This phone number is already registered.',
             'dob.before_or_equal' => 'Ushers must be 18 or older.',
             'acct.regex' => 'CBE account numbers must start with 1000 and contain digits only.',
             'photo1.max' => 'Each photo must be 2 MB or smaller.',
@@ -126,12 +128,12 @@ class PublicUsherProfileController extends Controller
             $updates = array_merge($updates, [
                 'name' => $data['name'],
                 'phone' => $data['phone'],
-                'email' => $data['email'] ?? null,
+                'email' => $this->blank($data['email'] ?? null),
                 'gender' => $data['gender'],
                 'date_of_birth' => $data['dob'],
                 'city' => $data['city'],
                 'address' => $data['address'],
-                'telegram' => $data['telegram'] ?? null,
+                'telegram' => $this->blank($data['telegram'] ?? null),
             ]);
         }
         if (in_array('emergency', $sections, true)) {
@@ -143,12 +145,12 @@ class PublicUsherProfileController extends Controller
         }
         if (in_array('background', $sections, true)) {
             $updates = array_merge($updates, [
-                'education_level' => $data['edu'] ?? null,
-                'institution' => $data['inst'] ?? null,
-                'field_of_study' => $data['field'] ?? null,
-                'occupation' => $data['occ'] ?? null,
-                'employer' => $data['employer'] ?? null,
-                'employment_status' => $data['empStatus'] ?? null,
+                'education_level' => $this->blank($data['edu'] ?? null),
+                'institution' => $this->blank($data['inst'] ?? null),
+                'field_of_study' => $this->blank($data['field'] ?? null),
+                'occupation' => $this->blank($data['occ'] ?? null),
+                'employer' => $this->blank($data['employer'] ?? null),
+                'employment_status' => $this->blank($data['empStatus'] ?? null),
             ]);
         }
         if (in_array('skills', $sections, true)) {
@@ -158,16 +160,16 @@ class PublicUsherProfileController extends Controller
                 'skills' => $data['skills'] ?? [],
                 'languages' => $data['languages'] ?? [],
                 'preferred_event_types' => $data['prefs'] ?? [],
-                'other_languages' => $data['otherLang'] ?? null,
-                'availability_preference' => $data['availability'] ?? null,
+                'other_languages' => $this->blank($data['otherLang'] ?? null),
+                'availability_preference' => $this->blank($data['availability'] ?? null),
             ]);
         }
         if (in_array('photos', $sections, true)) {
             $updates = array_merge($updates, [
-                'tshirt_size' => $data['tshirt'] ?? null,
-                'shirt_size' => $data['shirt'] ?? null,
-                'trouser_size' => $data['trouser'] ?? null,
-                'shoe_size' => $data['shoe'] ?? null,
+                'tshirt_size' => $this->blank($data['tshirt'] ?? null),
+                'shirt_size' => $this->blank($data['shirt'] ?? null),
+                'trouser_size' => $this->blank($data['trouser'] ?? null),
+                'shoe_size' => $this->blank($data['shoe'] ?? null),
             ]);
         }
         if (in_array('payment', $sections, true)) {
@@ -176,17 +178,17 @@ class PublicUsherProfileController extends Controller
                 'bank_name' => 'CBE',
                 'account_holder' => $data['holder'],
                 'account_number' => $data['acct'],
-                'telebirr_number' => $data['telebirr'] ?? null,
+                'telebirr_number' => $this->blank($data['telebirr'] ?? null),
                 'id_type' => $data['idType'],
-                'id_number' => $data['idNo'] ?? null,
+                'id_number' => $this->blank($data['idNo'] ?? null),
             ]);
         }
         if (in_array('social', $sections, true)) {
             $updates = array_merge($updates, [
-                'instagram' => $data['ig'] ?? null,
-                'facebook' => $data['fb'] ?? null,
-                'linkedin' => $data['li'] ?? null,
-                'tiktok' => $data['tt'] ?? null,
+                'instagram' => $this->blank($data['ig'] ?? null),
+                'facebook' => $this->blank($data['fb'] ?? null),
+                'linkedin' => $this->blank($data['li'] ?? null),
+                'tiktok' => $this->blank($data['tt'] ?? null),
             ]);
         }
 
@@ -234,6 +236,16 @@ class PublicUsherProfileController extends Controller
         abort_unless($photo->usher_id === $usher->id, 404);
 
         return StoredPhoto::response($photo->path);
+    }
+
+    private function blank(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 
     private function findByToken(string $token): Usher

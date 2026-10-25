@@ -1,3 +1,9 @@
+# cPanel/LiteSpeed often leaves the subdomain on PHP 8.1. Laravel 13 / this
+# vendor tree need PHP 8.4.1+. MultiPHP Manager should also be set to 8.4.
+<IfModule mime_module>
+    AddHandler application/x-httpd-ea-php84 .php .php8 .phtml
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
