@@ -5,7 +5,7 @@ import { api, logout } from "@/lib/api";
 import type { Admin, Assignment, Project, Reports, Usher, WorkspaceInfo } from "@/lib/demo-data";
 import type { SmsStatus } from "@/lib/sms";
 
-const publicPrefixes = ["/register", "/respond", "/confirm", "/client", "/rate", "/login", "/profile"];
+const publicPrefixes = ["/register", "/invite", "/respond", "/confirm", "/client", "/rate", "/login", "/profile"];
 
 type UsherUpdateInput = Partial<{
   status: string;

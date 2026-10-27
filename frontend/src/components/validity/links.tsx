@@ -223,15 +223,15 @@ function fieldMessage(field:HTMLInputElement|HTMLSelectElement|HTMLTextAreaEleme
 
 function formValue(form:HTMLFormElement|null,name:string){const field=form?.elements.namedItem(name);if(field instanceof HTMLInputElement||field instanceof HTMLSelectElement||field instanceof HTMLTextAreaElement)return field.value;return '';}
 
-export function RegistrationPage({token}:{token:string}){
+export function RegistrationPage({token,skipProbe,submitPath,session,defaults,notice,successTitle,successCopy}:{token:string;skipProbe?:boolean;submitPath?:string;session?:string;defaults?:{name?:string;phone?:string};notice?:string;successTitle?:string;successCopy?:string}){
   const formRef=useRef<HTMLFormElement>(null);
   const errorRef=useRef<HTMLParagraphElement>(null);
-  const [done,setDone]=useState(false);const [step,setStep]=useState(0);const [exp,setExp]=useState(1);const [photos,setPhotos]=useState<File[]>([]);const [idPhotoFront,setIdPhotoFront]=useState<File|null>(null);const [idPhotoBack,setIdPhotoBack]=useState<File|null>(null);const [error,setError]=useState('');const [fieldErrors,setFieldErrors]=useState<Record<string,string>>({});const [submitting,setSubmitting]=useState(false);const [photoJobs,setPhotoJobs]=useState(0);const [city,setCity]=useState('');const [linkError,setLinkError]=useState('');const [linkReady,setLinkReady]=useState(false);
+  const [done,setDone]=useState(false);const [step,setStep]=useState(0);const [exp,setExp]=useState(1);const [photos,setPhotos]=useState<File[]>([]);const [idPhotoFront,setIdPhotoFront]=useState<File|null>(null);const [idPhotoBack,setIdPhotoBack]=useState<File|null>(null);const [error,setError]=useState('');const [fieldErrors,setFieldErrors]=useState<Record<string,string>>({});const [submitting,setSubmitting]=useState(false);const [photoJobs,setPhotoJobs]=useState(0);const [city,setCity]=useState('');const [linkError,setLinkError]=useState('');const [linkReady,setLinkReady]=useState(Boolean(skipProbe));
   const photoBusy=photoJobs>0;
   const markPhotoBusy=(busy:boolean)=>setPhotoJobs(n=>Math.max(0,n+(busy?1:-1)));
-  useEffect(()=>{void api(`/api/public/register/${token}`).then(()=>setLinkReady(true)).catch(()=>setLinkError('This registration link is not valid or has been revoked.'));},[token]);
+  useEffect(()=>{if(skipProbe)return;void api(`/api/public/register/${token}`).then(()=>setLinkReady(true)).catch(()=>setLinkError('This registration link is not valid or has been revoked.'));},[token,skipProbe]);
   const steps:[string,ReactNode][]=[
-    ['About you',<Section title="About you"><F label="Full name" name="name" required minLength={3} maxLength={255} autoComplete="name" error={fieldErrors.name}/><F label="Phone number" name="phone" type="tel" required inputMode="tel" autoComplete="tel" pattern={PHONE_PATTERN} maxLength={50} placeholder="09xx xxx xxx or +251 9xx xxx xxx" hint="Use your Ethiopian mobile number." error={fieldErrors.phone}/><F label="Gender" name="gender" required options={['Female','Male']} error={fieldErrors.gender}/><F label="Date of birth" name="dob" type="date" required max={adultDobMax()} title="You must be 18 or older" autoComplete="bday" error={fieldErrors.dob} onChange={e=>{const el=e.currentTarget;if(el.value&&!isAdultDob(el.value))el.setCustomValidity('Ushers must be 18 or older.');else el.setCustomValidity('');}}/><p className="full subtext">Ushers must be 18 or older.</p><F label="City" name="city" required options={CITIES} error={fieldErrors.city} onChange={e=>setCity(e.currentTarget.value)}/>{city==='Other'&&<F label="City or town" name="cityOther" required full maxLength={100} hint="Write the city if it is not in the list." error={fieldErrors.cityOther}/>}<F label="Address" name="address" required full maxLength={255} autoComplete="street-address" error={fieldErrors.address}/><F label="Email" name="email" type="email" autoComplete="email" maxLength={255} error={fieldErrors.email}/><F label="Telegram username" name="telegram" placeholder="@username" maxLength={100} error={fieldErrors.telegram}/></Section>],
+    ['About you',<Section title="About you"><F label="Full name" name="name" required minLength={3} maxLength={255} autoComplete="name" defaultValue={defaults?.name} error={fieldErrors.name}/><F label="Phone number" name="phone" type="tel" required inputMode="tel" autoComplete="tel" pattern={PHONE_PATTERN} maxLength={50} placeholder="09xx xxx xxx or +251 9xx xxx xxx" hint="Use your Ethiopian mobile number." defaultValue={defaults?.phone} error={fieldErrors.phone}/><F label="Gender" name="gender" required options={['Female','Male']} error={fieldErrors.gender}/><F label="Date of birth" name="dob" type="date" required max={adultDobMax()} title="You must be 18 or older" autoComplete="bday" error={fieldErrors.dob} onChange={e=>{const el=e.currentTarget;if(el.value&&!isAdultDob(el.value))el.setCustomValidity('Ushers must be 18 or older.');else el.setCustomValidity('');}}/><p className="full subtext">Ushers must be 18 or older.</p><F label="City" name="city" required options={CITIES} error={fieldErrors.city} onChange={e=>setCity(e.currentTarget.value)}/>{city==='Other'&&<F label="City or town" name="cityOther" required full maxLength={100} hint="Write the city if it is not in the list." error={fieldErrors.cityOther}/>}<F label="Address" name="address" required full maxLength={255} autoComplete="street-address" error={fieldErrors.address}/><F label="Email" name="email" type="email" autoComplete="email" maxLength={255} error={fieldErrors.email}/><F label="Telegram username" name="telegram" placeholder="@username" maxLength={100} error={fieldErrors.telegram}/></Section>],
     ['Emergency',<Section title="Emergency contact"><F label="Contact name" name="ecName" required full maxLength={255} autoComplete="off" error={fieldErrors.ecName}/><F label="Relationship" name="ecRel" required maxLength={100} error={fieldErrors.ecRel}/><F label="Phone number" name="ecPhone" type="tel" required inputMode="tel" pattern={PHONE_PATTERN} maxLength={50} placeholder="09xx xxx xxx" error={fieldErrors.ecPhone}/></Section>],
     ['Your work profile',<><p className="full subtext">Optional — skip if you want to finish faster. You can add this later if Validity asks.</p><Section title="Education"><F label="Highest education level" name="edu" options={['High school','Diploma','Bachelor’s degree','Master’s degree','Other']}/><F label="Institution" name="inst"/><F label="Field of study" name="field" full/></Section><Section title="Employment"><F label="Current occupation" name="occ"/><F label="Employer / company" name="employer"/><F label="Employment status" name="empStatus" full options={['Student','Employed','Self-employed','Unemployed','Freelancer']}/></Section><Section title="Languages & skills"><Checks label="Languages you speak" name="languages" items={['Amharic','English','Afaan Oromo','Tigrinya','Somali','Arabic','Other']}/><F label="Other languages" name="otherLang" full/><Checks label="Skills" name="skills" items={['Registration','Guest Relations','VIP Handling','Crowd Management','Hospitality','Brand Ambassador','Ticketing','Check-in','Event Protocol','Public Speaking','Customer Service','Team Leader','Supervisor','Technical Support']}/><Checks label="Preferred event types" name="prefs" items={['Corporate','Conference','Exhibition','Concert','Festival','Product Launch','Brand Activation','Wedding','VIP','Government','Sports','Retail/BTL']}/><F label="General availability" name="availability" full options={['Weekdays','Weekends','Weekdays & weekends','Evenings only']}/></Section><Section title="Event experience"><F label="Years of event experience" name="years" type="number" min="0"/><F label="Number of events worked" name="events" type="number" min="0"/>
       {Array.from({length:exp}).map((_,i)=><div key={i} className="full sub-entry"><strong>Experience {i+1}</strong><div className="form-grid"><F label="Event name" name={`exEvent${i}`}/><F label="Client" name={`exClient${i}`}/><F label="Role performed" name={`exRole${i}`}/><F label="Event type" name={`exType${i}`} options={['Corporate Event','Conference','Exhibition','Concert','Wedding','Product Launch','Brand Activation','VIP Event']}/></div>{exp>1&&<Button type="button" variant="outline" size="sm" onClick={()=>setExp(n=>Math.max(1,n-1))}>Remove last</Button>}</div>)}
@@ -308,8 +308,9 @@ export function RegistrationPage({token}:{token:string}){
     photos.slice(0,3).forEach((file,index)=>body.append(`photo${index+1}`,file));
     body.append('idPhotoFront',idPhotoFront);
     body.append('idPhotoBack',idPhotoBack);
+    if(session)body.set('session',session);
     try{
-      await api(`/api/public/register/${token}`,{method:'POST',body});
+      await api(submitPath??`/api/public/register/${token}`,{method:'POST',body});
       setDone(true);window.scrollTo(0,0);
     }catch(err){
       const mapped=apiFieldErrorMap(err);
@@ -325,12 +326,12 @@ export function RegistrationPage({token}:{token:string}){
       setSubmitting(false);
     }
   };
-  if(done)return <PublicShell variant="reg"><SuccessCard title="Registration received" copy="Thank you! The Validity team will review your profile and contact you once it’s verified."/></PublicShell>;
+  if(done)return <PublicShell variant="reg"><SuccessCard title={successTitle??'Registration received'} copy={successCopy??'Thank you! The Validity team will review your profile and contact you once it’s verified.'}/></PublicShell>;
   if(linkError)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{linkError}</p></div></PublicShell>;
   if(!linkReady)return <PublicShell><LoadingMark label="Checking registration link…" /></PublicShell>;
   const optional=steps[step]?.[0]==='Your work profile';
   return <PublicShell variant="reg"><form ref={formRef} className="reg-form" noValidate onSubmit={e=>{e.preventDefault();if(submitting)return;if(step<steps.length-1){if(paneValid(step))showStep(step+1);return;}if(!paneValid(step))return;void submitRegistration(e.currentTarget);}}>
-    <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Join the usher community · about 3 minutes</p>{error&&<p ref={errorRef} role="alert" aria-live="assertive" className="reg-error">{error}</p>}<div className="reg-progress"><span>Step {step+1} of {steps.length}</span><strong>{steps[step][0]}</strong><ol className="reg-steps">{steps.map(([title],index)=><li key={title} className={index===step?'current':index<step?'done':''}>{index+1}</li>)}</ol><div className="reg-bar" aria-hidden="true"><span style={{width:`${((step+1)/steps.length)*100}%`}}/></div></div></div>
+    <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Join the usher community · about 3 minutes</p>{notice&&<p className="correction-note" role="note">{notice}</p>}{error&&<p ref={errorRef} role="alert" aria-live="assertive" className="reg-error">{error}</p>}<div className="reg-progress"><span>Step {step+1} of {steps.length}</span><strong>{steps[step][0]}</strong><ol className="reg-steps">{steps.map(([title],index)=><li key={title} className={index===step?'current':index<step?'done':''}>{index+1}</li>)}</ol><div className="reg-bar" aria-hidden="true"><span style={{width:`${((step+1)/steps.length)*100}%`}}/></div></div></div>
     <div className="reg-body">{steps.map(([title,node],index)=><div key={title} data-step className={index===step?'reg-step active':''} hidden={index!==step}>{node}</div>)}</div>
     <div className="reg-nav">{step>0&&<Button type="button" variant="outline" onClick={()=>showStep(step-1)}>Back</Button>}{optional&&<Button type="button" variant="outline" onClick={()=>showStep(step+1)}>Skip for now</Button>}{step<steps.length-1?<Button type="button" disabled={photoBusy} onClick={()=>{if(paneValid(step))showStep(step+1);}}>Continue</Button>:<Button type="submit" size="lg" pending={submitting} disabled={photoBusy}>Submit registration</Button>}</div>
   </form></PublicShell>;
@@ -410,10 +411,10 @@ function previewUsher(name:string,photos:string[]):Usher{
   return {id:0,name,city:'',gender:'',experience:0,events:0,rating:0,skills:[],languages:[],status:'Pending',available:true,photos};
 }
 
-export function ProfileEditPage({token}:{token:string}){
+export function ProfileEditPage({token,skipLoad,initialProfile,submitPath,session,notice,successTitle,successCopy}:{token:string;skipLoad?:boolean;initialProfile?:EditableProfile;submitPath?:string;session?:string;notice?:string;successTitle?:string;successCopy?:string}){
   const formRef=useRef<HTMLFormElement>(null);
   const errorRef=useRef<HTMLParagraphElement>(null);
-  const [profile,setProfile]=useState<EditableProfile|null>(null);
+  const [profile,setProfile]=useState<EditableProfile|null>(initialProfile??null);
   const [error,setError]=useState('');
   const [fieldErrors,setFieldErrors]=useState<Record<string,string>>({});
   const [loadError,setLoadError]=useState('');
@@ -424,10 +425,10 @@ export function ProfileEditPage({token}:{token:string}){
   const [photos,setPhotos]=useState<File[]>([]);
   const [idPhotoFront,setIdPhotoFront]=useState<File|null>(null);
   const [idPhotoBack,setIdPhotoBack]=useState<File|null>(null);
-  const [city,setCity]=useState('');
+  const [city,setCity]=useState(initialProfile?.city??'');
   const photoBusy=photoJobs>0;
   const markPhotoBusy=(busy:boolean)=>setPhotoJobs(n=>Math.max(0,n+(busy?1:-1)));
-  useEffect(()=>{void api<EditableProfile>(`/api/public/profile/${token}`).then(data=>{setProfile(data);setCity(data.city??'');}).catch(()=>setLoadError('This correction link is not valid or has expired.'))},[token]);
+  useEffect(()=>{if(skipLoad)return;void api<EditableProfile>(`/api/public/profile/${token}`).then(data=>{setProfile(data);setCity(data.city??'');}).catch(()=>setLoadError('This correction link is not valid or has expired.'))},[token,skipLoad]);
   const showError=(message:string)=>{setError(message);requestAnimationFrame(()=>errorRef.current?.scrollIntoView({behavior:'smooth',block:'nearest'}));};
   const failField=(field:HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement,message:string)=>{
     field.classList.add('field-invalid');
@@ -436,7 +437,7 @@ export function ProfileEditPage({token}:{token:string}){
     try{field.focus({preventScroll:false});}catch{/* ignore */}
   };
   const showStep=(index:number,clearError=true)=>{setStep(index);if(clearError){setError('');setFieldErrors({});}const body=formRef.current?.querySelector('.reg-body');if(body)body.scrollTop=0;};
-  if(done)return <PublicShell variant="reg"><SuccessCard title="Updates received" copy="Thank you. The Validity team will review your corrected profile."/></PublicShell>;
+  if(done)return <PublicShell variant="reg"><SuccessCard title={successTitle??'Updates received'} copy={successCopy??'Thank you. The Validity team will review your corrected profile.'}/></PublicShell>;
   if(loadError)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{loadError}</p></div></PublicShell>;
   if(!profile)return <PublicShell><LoadingMark label="Loading your profile…" /></PublicShell>;
   const requested=(profile.correctionSections?.length?profile.correctionSections:ALL_CORRECTION_SECTIONS) as string[];
@@ -506,8 +507,9 @@ export function ProfileEditPage({token}:{token:string}){
     photos.slice(0,3).forEach((file,index)=>body.append(`photo${index+1}`,file));
     if(idPhotoFront)body.append('idPhotoFront',idPhotoFront);
     if(idPhotoBack)body.append('idPhotoBack',idPhotoBack);
+    if(session)body.set('session',session);
     try{
-      await api(`/api/public/profile/${token}`,{method:'POST',body});
+      await api(submitPath??`/api/public/profile/${token}`,{method:'POST',body});
       setDone(true);window.scrollTo(0,0);
     }catch(err){
       const mapped=apiFieldErrorMap(err);
@@ -525,9 +527,32 @@ export function ProfileEditPage({token}:{token:string}){
   };
   const current=steps[step]??steps[0];
   return <PublicShell variant="reg"><form ref={formRef} className="reg-form profile-edit-form" noValidate onSubmit={e=>{e.preventDefault();if(submitting)return;if(step<steps.length-1){if(paneValid(step))showStep(step+1);return;}if(!paneValid(step))return;void submitCorrection(e.currentTarget);}}>
-    <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Update your usher profile</p>{profile.correctionNote&&<p className="correction-note" role="note"><strong>From Validity: </strong>{profile.correctionNote}</p>}{error&&<p ref={errorRef} role="alert" aria-live="assertive" className="reg-error">{error}</p>}<div className="reg-progress"><span>Step {step+1} of {steps.length}</span><strong>{current?.[1]}</strong><ol className="reg-steps">{steps.map(([id],index)=><li key={id} className={index===step?'current':index<step?'done':''}>{index+1}</li>)}</ol><div className="reg-bar" aria-hidden="true"><span style={{width:`${((step+1)/Math.max(steps.length,1))*100}%`}}/></div></div></div>
+    <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Update your usher profile</p>{(notice||profile.correctionNote)&&<p className="correction-note" role="note">{notice??<><strong>From Validity: </strong>{profile.correctionNote}</>}</p>}{error&&<p ref={errorRef} role="alert" aria-live="assertive" className="reg-error">{error}</p>}<div className="reg-progress"><span>Step {step+1} of {steps.length}</span><strong>{current?.[1]}</strong><ol className="reg-steps">{steps.map(([id],index)=><li key={id} className={index===step?'current':index<step?'done':''}>{index+1}</li>)}</ol><div className="reg-bar" aria-hidden="true"><span style={{width:`${((step+1)/Math.max(steps.length,1))*100}%`}}/></div></div></div>
     <div className="reg-body">{steps.map(([id,title,node],index)=><div key={id} data-step className={index===step?'reg-step active':''} hidden={index!==step}>{node}</div>)}</div>
-    <div className="reg-nav">{step>0&&<Button type="button" variant="outline" onClick={()=>showStep(step-1)}>Back</Button>}{step<steps.length-1?<Button type="button" disabled={photoBusy} onClick={()=>{if(paneValid(step))showStep(step+1);}}>Continue</Button>:<Button type="submit" size="lg" pending={submitting} disabled={photoBusy}>Submit corrections</Button>}</div>
+    <div className="reg-nav">{step>0&&<Button type="button" variant="outline" onClick={()=>showStep(step-1)}>Back</Button>}{step<steps.length-1?<Button type="button" disabled={photoBusy} onClick={()=>{if(paneValid(step))showStep(step+1);}}>Continue</Button>:<Button type="submit" size="lg" pending={submitting} disabled={photoBusy}>{session?'Submit for approval':'Submit corrections'}</Button>}</div>
+  </form></PublicShell>;
+}
+
+type InviteLookup={outcome:'active'|'amend'|'create';message:string;session?:string;profile?:EditableProfile};
+
+export function InvitePage({token}:{token:string}){
+  const [linkReady,setLinkReady]=useState(false);
+  const [linkError,setLinkError]=useState('');
+  const [name,setName]=useState('');
+  const [phone,setPhone]=useState('');
+  const [error,setError]=useState('');
+  const [pending,setPending]=useState(false);
+  const [result,setResult]=useState<InviteLookup|null>(null);
+  useEffect(()=>{void api(`/api/public/invite/${token}`).then(()=>setLinkReady(true)).catch(()=>setLinkError('This invite link is not valid or has been revoked.'));},[token]);
+  if(linkError)return <PublicShell><div className="public-card center"><h1>Link not found</h1><p className="subtext">{linkError}</p></div></PublicShell>;
+  if(!linkReady)return <PublicShell><LoadingMark label="Checking invite link…" /></PublicShell>;
+  if(result?.outcome==='active')return <PublicShell variant="reg"><SuccessCard title="You’re already on the roster" copy={result.message}/></PublicShell>;
+  if(result?.outcome==='create'&&result.session)return <RegistrationPage token={token} skipProbe submitPath={`/api/public/invite/${token}`} session={result.session} defaults={{name,phone}} notice={result.message}/>;
+  if(result?.outcome==='amend'&&result.session&&result.profile)return <ProfileEditPage token={token} skipLoad initialProfile={result.profile} submitPath={`/api/public/invite/${token}`} session={result.session} notice={result.message} successTitle="Updates received" successCopy="Thank you. The Validity team will review your profile."/>;
+  return <PublicShell variant="reg"><form className="reg-form" onSubmit={e=>{e.preventDefault();if(pending)return;const form=new FormData(e.currentTarget);const submittedName=String(form.get('name')??'').trim();const submittedPhone=String(form.get('phone')??'').trim();setName(submittedName);setPhone(submittedPhone);setError('');setPending(true);void api<InviteLookup>(`/api/public/invite/${token}/lookup`,{method:'POST',body:JSON.stringify({name:submittedName,phone:submittedPhone})}).then(setResult).catch(err=>setError(formatApiError(err))).finally(()=>setPending(false));}}>
+    <div className="reg-top"><img src="/validity-events-logo.svg" alt="Validity Events" className="reg-logo"/><p className="reg-tagline">Check your Validity usher profile</p>{error&&<p role="alert" aria-live="assertive" className="reg-error">{error}</p>}</div>
+    <div className="reg-body"><div className="reg-step active"><Section title="Find your profile"><F label="Full name" name="name" required minLength={3} maxLength={255} autoComplete="name"/><F label="Phone number" name="phone" type="tel" required inputMode="tel" autoComplete="tel" pattern={PHONE_PATTERN} maxLength={50} placeholder="09xx xxx xxx or +251 9xx xxx xxx" hint="Use the Ethiopian mobile number on your profile."/></Section></div></div>
+    <div className="reg-nav"><Button type="submit" size="lg" pending={pending}>Continue</Button></div>
   </form></PublicShell>;
 }
 

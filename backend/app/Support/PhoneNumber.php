@@ -48,6 +48,13 @@ class PhoneNumber
             return false;
         }
 
+        if ($ignoreUsherId) {
+            $current = Usher::query()->find($ignoreUsherId);
+            if ($current && self::canonical($current->phone) === $canonical) {
+                return false;
+            }
+        }
+
         return Usher::query()
             ->when($ignoreUsherId, fn ($query) => $query->where('id', '!=', $ignoreUsherId))
             ->whereNotNull('phone')

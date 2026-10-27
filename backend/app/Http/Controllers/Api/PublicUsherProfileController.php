@@ -18,7 +18,7 @@ class PublicUsherProfileController extends Controller
         $usher = $this->findByToken($token);
         $usher->load(['photos', 'experiences', 'references']);
 
-        return response()->json($this->presentPublicEdit($usher, $token));
+        return response()->json($usher->presentForPublicEdit($token));
     }
 
     public function update(Request $request, string $token): JsonResponse
@@ -254,74 +254,5 @@ class PublicUsherProfileController extends Controller
             ->where('profile_edit_token', $token)
             ->whereNotNull('profile_edit_token')
             ->firstOrFail();
-    }
-
-    private function presentPublicEdit(Usher $usher, string $token): array
-    {
-        $photos = $usher->photos
-            ->filter(fn (UsherPhoto $photo) => ! Usher::isIdPhotoKind($photo->kind))
-            ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
-            ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
-            ->values()
-            ->map(fn (UsherPhoto $photo) => "/api/public/profile/{$token}/photos/{$photo->id}")
-            ->all();
-
-        $idFront = $usher->photos->first(fn (UsherPhoto $photo) => in_array($photo->kind, ['id_front', 'id'], true));
-        $idBack = $usher->photos->first(fn (UsherPhoto $photo) => $photo->kind === 'id_back');
-        $idFrontPath = $idFront && StoredPhoto::locate($idFront->path) !== null
-            ? "/api/public/profile/{$token}/photos/{$idFront->id}"
-            : null;
-        $idBackPath = $idBack && StoredPhoto::locate($idBack->path) !== null
-            ? "/api/public/profile/{$token}/photos/{$idBack->id}"
-            : null;
-
-        return [
-            'id' => $usher->id,
-            'name' => $usher->name,
-            'phone' => $usher->phone,
-            'email' => $usher->email,
-            'city' => $usher->city,
-            'address' => $usher->address,
-            'gender' => $usher->gender ?? '',
-            'dob' => $usher->date_of_birth?->format('Y-m-d'),
-            'telegram' => $usher->telegram,
-            'emergencyContactName' => $usher->emergency_contact_name,
-            'emergencyContactRelationship' => $usher->emergency_contact_relationship,
-            'emergencyContactPhone' => $usher->emergency_contact_phone,
-            'educationLevel' => $usher->education_level,
-            'institution' => $usher->institution,
-            'fieldOfStudy' => $usher->field_of_study,
-            'occupation' => $usher->occupation,
-            'employer' => $usher->employer,
-            'employmentStatus' => $usher->employment_status,
-            'experience' => $usher->years_experience,
-            'events' => $usher->events_count,
-            'availability' => $usher->availability_preference,
-            'skills' => $usher->skills ?? [],
-            'languages' => $usher->languages ?? [],
-            'otherLanguages' => $usher->other_languages,
-            'preferredEvents' => $usher->preferred_event_types ?? [],
-            'tshirtSize' => $usher->tshirt_size,
-            'shirtSize' => $usher->shirt_size,
-            'trouserSize' => $usher->trouser_size,
-            'shoeSize' => $usher->shoe_size,
-            'bankName' => $usher->bank_name,
-            'accountHolder' => $usher->account_holder,
-            'accountNumber' => $usher->account_number,
-            'telebirrNumber' => $usher->telebirr_number,
-            'idType' => $usher->id_type,
-            'idNumber' => $usher->id_number,
-            'idPhoto' => $idFrontPath,
-            'idPhotoFront' => $idFrontPath,
-            'idPhotoBack' => $idBackPath,
-            'instagram' => $usher->instagram,
-            'facebook' => $usher->facebook,
-            'linkedin' => $usher->linkedin,
-            'tiktok' => $usher->tiktok,
-            'status' => $usher->status,
-            'photos' => $photos,
-            'correctionSections' => $usher->correctionSections(),
-            'correctionNote' => $usher->correction_note,
-        ];
     }
 }

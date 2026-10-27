@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\Api\CpanelMigrateController;
 use App\Models\Assignment;
 use App\Models\Project;
+use App\Models\User;
 use App\Models\Usher;
 use App\Models\UsherPhoto;
-use App\Models\User;
 use App\Models\WorkspaceSetting;
+use App\Support\StoredPhoto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
@@ -448,7 +448,7 @@ class ValidityApiTest extends TestCase
 
         $registered = Usher::query()->where('name', 'Delete Me')->firstOrFail();
         $photo = UsherPhoto::query()->where('usher_id', $registered->id)->firstOrFail();
-        $this->assertNotNull(\App\Support\StoredPhoto::locate($photo->path));
+        $this->assertNotNull(StoredPhoto::locate($photo->path));
 
         $this->deleteJson('/api/ushers/'.$registered->id.'/photos/'.$photo->id)->assertNoContent();
         $this->assertDatabaseMissing('usher_photos', ['id' => $photo->id]);
@@ -704,6 +704,56 @@ class ValidityApiTest extends TestCase
             'correction_note' => null,
         ]);
         $this->assertNull(Usher::query()->findOrFail($usher->id)->correction_sections);
+    }
+
+    public function test_correction_accepts_the_ushers_own_phone_in_another_format(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $usher = Usher::query()->firstOrFail();
+        $usher->update(['phone' => '+251911666555']);
+        $token = $this->patchJson('/api/ushers/'.$usher->id, [
+            'status' => 'Correction Required',
+            'correctionSections' => ['about'],
+        ])->assertOk()->json('profileEditToken');
+
+        $this->post('/api/public/profile/'.$token, [
+            'name' => $usher->name,
+            'phone' => '0911 666 555',
+            'gender' => 'Female',
+            'dob' => '1998-05-05',
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+        ])->assertOk();
+
+        $this->assertSame('0911 666 555', Usher::query()->findOrFail($usher->id)->phone);
+    }
+
+    public function test_correction_rejects_another_ushers_phone_number(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::query()->where('email', 'admin@validity.et')->firstOrFail());
+
+        $usher = Usher::query()->firstOrFail();
+        $other = Usher::query()->where('id', '!=', $usher->id)->firstOrFail();
+        $usher->update(['phone' => '+251911666555']);
+        $other->update(['phone' => '+251922000000']);
+        $token = $this->patchJson('/api/ushers/'.$usher->id, [
+            'status' => 'Correction Required',
+            'correctionSections' => ['about'],
+        ])->assertOk()->json('profileEditToken');
+
+        $this->post('/api/public/profile/'.$token, [
+            'name' => $usher->name,
+            'phone' => '0922000000',
+            'gender' => 'Female',
+            'dob' => '1998-05-05',
+            'city' => 'Addis Ababa',
+            'address' => 'Bole',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath('errors.phone.0', 'This phone number is already registered.');
     }
 
     public function test_social_only_correction_does_not_require_other_sections(): void

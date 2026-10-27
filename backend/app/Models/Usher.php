@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\PhoneNumber;
+use App\Support\StoredPhoto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Support\StoredPhoto;
+use Illuminate\Http\Request;
 
 class Usher extends Model
 {
@@ -53,7 +55,7 @@ class Usher extends Model
     /**
      * @return list<string>
      */
-    public function correctionSectionsForUpdate(\Illuminate\Http\Request $request): array
+    public function correctionSectionsForUpdate(Request $request): array
     {
         $stored = array_values(array_intersect(self::CORRECTION_SECTIONS, $this->correction_sections ?? []));
         if ($stored !== []) {
@@ -68,7 +70,7 @@ class Usher extends Model
     /**
      * @return list<string>
      */
-    public static function inferSectionsFromRequest(\Illuminate\Http\Request $request): array
+    public static function inferSectionsFromRequest(Request $request): array
     {
         $map = [
             'about' => ['name', 'phone', 'gender', 'dob', 'city', 'address', 'email', 'telegram'],
@@ -126,6 +128,114 @@ class Usher extends Model
     public static function isIdPhotoKind(?string $kind): bool
     {
         return in_array($kind, self::idPhotoKinds(), true);
+    }
+
+    public static function normalizeName(string $name): string
+    {
+        $collapsed = preg_replace('/\s+/u', ' ', trim($name)) ?? '';
+
+        return mb_strtolower($collapsed);
+    }
+
+    public static function findByCanonicalPhone(string $phone): ?self
+    {
+        $canonical = PhoneNumber::canonical($phone);
+        if ($canonical === null) {
+            return null;
+        }
+
+        return self::query()
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->orderByDesc('id')
+            ->get()
+            ->first(fn (self $usher) => PhoneNumber::canonical($usher->phone) === $canonical);
+    }
+
+    public static function findByNormalizedName(string $name): ?self
+    {
+        $normalized = self::normalizeName($name);
+        if ($normalized === '') {
+            return null;
+        }
+
+        return self::query()
+            ->orderByDesc('id')
+            ->get()
+            ->first(fn (self $usher) => self::normalizeName((string) $usher->name) === $normalized);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function presentForPublicEdit(string $photoToken): array
+    {
+        $this->loadMissing('photos');
+        $photos = $this->photos
+            ->filter(fn (UsherPhoto $photo) => ! self::isIdPhotoKind($photo->kind))
+            ->sortBy(fn (UsherPhoto $photo) => $photo->kind === 'profile' ? 0 : 1)
+            ->filter(fn (UsherPhoto $photo) => StoredPhoto::locate($photo->path) !== null)
+            ->values()
+            ->map(fn (UsherPhoto $photo) => "/api/public/profile/{$photoToken}/photos/{$photo->id}")
+            ->all();
+
+        $idFront = $this->photos->first(fn (UsherPhoto $photo) => in_array($photo->kind, ['id_front', 'id'], true));
+        $idBack = $this->photos->first(fn (UsherPhoto $photo) => $photo->kind === 'id_back');
+        $idFrontPath = $idFront && StoredPhoto::locate($idFront->path) !== null
+            ? "/api/public/profile/{$photoToken}/photos/{$idFront->id}"
+            : null;
+        $idBackPath = $idBack && StoredPhoto::locate($idBack->path) !== null
+            ? "/api/public/profile/{$photoToken}/photos/{$idBack->id}"
+            : null;
+
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'phone' => $this->phone,
+            'email' => $this->email,
+            'city' => $this->city,
+            'address' => $this->address,
+            'gender' => $this->gender ?? '',
+            'dob' => $this->date_of_birth?->format('Y-m-d'),
+            'telegram' => $this->telegram,
+            'emergencyContactName' => $this->emergency_contact_name,
+            'emergencyContactRelationship' => $this->emergency_contact_relationship,
+            'emergencyContactPhone' => $this->emergency_contact_phone,
+            'educationLevel' => $this->education_level,
+            'institution' => $this->institution,
+            'fieldOfStudy' => $this->field_of_study,
+            'occupation' => $this->occupation,
+            'employer' => $this->employer,
+            'employmentStatus' => $this->employment_status,
+            'experience' => $this->years_experience,
+            'events' => $this->events_count,
+            'availability' => $this->availability_preference,
+            'skills' => $this->skills ?? [],
+            'languages' => $this->languages ?? [],
+            'otherLanguages' => $this->other_languages,
+            'preferredEvents' => $this->preferred_event_types ?? [],
+            'tshirtSize' => $this->tshirt_size,
+            'shirtSize' => $this->shirt_size,
+            'trouserSize' => $this->trouser_size,
+            'shoeSize' => $this->shoe_size,
+            'bankName' => $this->bank_name,
+            'accountHolder' => $this->account_holder,
+            'accountNumber' => $this->account_number,
+            'telebirrNumber' => $this->telebirr_number,
+            'idType' => $this->id_type,
+            'idNumber' => $this->id_number,
+            'idPhoto' => $idFrontPath,
+            'idPhotoFront' => $idFrontPath,
+            'idPhotoBack' => $idBackPath,
+            'instagram' => $this->instagram,
+            'facebook' => $this->facebook,
+            'linkedin' => $this->linkedin,
+            'tiktok' => $this->tiktok,
+            'status' => $this->status,
+            'photos' => $photos,
+            'correctionSections' => $this->correctionSections(),
+            'correctionNote' => $this->correction_note,
+        ];
     }
 
     public function photoPaths(): array

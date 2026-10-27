@@ -21,6 +21,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ClientIdRouteImport } from './routes/client.$id'
 import { Route as ConfirmTokenRouteImport } from './routes/confirm.$token'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as PaymentsIndexRouteImport } from './routes/payments.index'
 import { Route as PaymentsIdRouteImport } from './routes/payments.$id'
 import { Route as ProfileTokenRouteImport } from './routes/profile.$token'
@@ -90,6 +91,11 @@ const ConfirmTokenRoute = ConfirmTokenRouteImport.update({
   path: '/confirm/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PaymentsIndexRoute = PaymentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/payments/$id': typeof PaymentsIdRoute
   '/profile/$token': typeof ProfileTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/payments/$id': typeof PaymentsIdRoute
   '/profile/$token': typeof ProfileTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/verification': typeof VerificationRoute
   '/client/$id': typeof ClientIdRoute
   '/confirm/$token': typeof ConfirmTokenRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/payments/$id': typeof PaymentsIdRoute
   '/profile/$token': typeof ProfileTokenRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/client/$id'
     | '/confirm/$token'
+    | '/invite/$token'
     | '/payments/$id'
     | '/profile/$token'
     | '/projects/$id'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/client/$id'
     | '/confirm/$token'
+    | '/invite/$token'
     | '/payments/$id'
     | '/profile/$token'
     | '/projects/$id'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/client/$id'
     | '/confirm/$token'
+    | '/invite/$token'
     | '/payments/$id'
     | '/profile/$token'
     | '/projects/$id'
@@ -276,6 +288,7 @@ export interface RootRouteChildren {
   VerificationRoute: typeof VerificationRoute
   ClientIdRoute: typeof ClientIdRoute
   ConfirmTokenRoute: typeof ConfirmTokenRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ProfileTokenRoute: typeof ProfileTokenRoute
   RateIdRoute: typeof RateIdRoute
   RegisterTokenRoute: typeof RegisterTokenRoute
@@ -366,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: '/confirm/$token'
       fullPath: '/confirm/$token'
       preLoaderRoute: typeof ConfirmTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payments/': {
@@ -468,6 +488,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerificationRoute: VerificationRoute,
   ClientIdRoute: ClientIdRoute,
   ConfirmTokenRoute: ConfirmTokenRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ProfileTokenRoute: ProfileTokenRoute,
   RateIdRoute: RateIdRoute,
   RegisterTokenRoute: RegisterTokenRoute,
